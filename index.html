@@ -520,6 +520,7 @@
   }
 
   // ---------- sincronización en equipo (Firebase) ----------
+  var lastSyncError=null;
   function renderSyncPill(){
     var el=$("syncPill"); if(!el) return;
     if(!CLOUD_CONFIGURED){ el.style.display="none"; return; }
@@ -529,6 +530,9 @@
       el.className = navigator.onLine ? "sync-pill on" : "sync-pill off";
     }else if(SYNC_MODE==="connecting"){
       el.textContent="🟡 Conectando...";
+      el.className="sync-pill off";
+    }else if(lastSyncError){
+      el.textContent="🔴 Error: "+lastSyncError;
       el.className="sync-pill off";
     }else{
       el.textContent="⚪ Solo este celular (pon el mismo código en otro para compartir)";
@@ -541,12 +545,13 @@
     if(wanted === currentRoomSlug && (SYNC_MODE==="on"||SYNC_MODE==="connecting")) return; // ya conectado a la sala correcta
     disconnectSync();
     if(!wanted) return;
+    lastSyncError=null;
     SYNC_MODE="connecting"; renderSyncPill();
     try{
       if(!fbApp){
         fbApp=firebase.initializeApp(FIREBASE_CONFIG);
         db=firebase.firestore();
-        try{ db.enablePersistence({synchronizeTabs:true}); }catch(e){}
+        db.enablePersistence({synchronizeTabs:true}).catch(function(e){ console.warn("persistence", e); });
       }
       // Inicia sesión anónima: bloquea el acceso directo de bots/scripts a la
       // base de datos, sin pedirle nada al usuario (es automático e invisible).
@@ -562,7 +567,7 @@
           store.set(K_META, JSON.stringify(meta));
           renderMetaInputs();
         }
-      }, function(e){ console.warn("meta listener", e); });
+      }, function(e){ lastSyncError=(e&&e.code)||(e&&e.message)||"meta"; console.warn("meta listener", e); SYNC_MODE="off"; renderSyncPill(); });
       unsubFindings = roomRef.collection("hallazgos").onSnapshot(function(snap){
         var arr=[]; snap.forEach(function(doc){ arr.push(doc.data()); });
         arr.sort(function(a,b){ return (a.ts||0)-(b.ts||0); });
@@ -571,8 +576,9 @@
         saveIndex();
         renderAll();
         SYNC_MODE="on"; renderSyncPill();
-      }, function(e){ console.warn("findings listener", e); SYNC_MODE="off"; renderSyncPill(); });
+      }, function(e){ lastSyncError=(e&&e.code)||(e&&e.message)||"hallazgos"; console.warn("findings listener", e); SYNC_MODE="off"; renderSyncPill(); });
     }catch(e){
+      lastSyncError=(e&&e.code)||(e&&e.message)||String(e);
       console.warn("No se pudo conectar la sala compartida:", e);
       SYNC_MODE="off"; renderSyncPill();
     }

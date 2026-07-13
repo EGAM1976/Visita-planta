@@ -39,6 +39,9 @@
   .gear{background:rgba(255,255,255,.16);color:#fff;width:44px;height:44px;border-radius:10px;
     font-size:21.5px;display:flex;align-items:center;justify-content:center}
   .save-dot{font-size:13px;opacity:0;transition:opacity .3s;margin-top:6px;height:14px}
+  .sync-pill{display:inline-block;font-size:12.5px;font-weight:700;padding:3px 10px;border-radius:999px;
+    margin-top:6px;background:rgba(255,255,255,.16);color:#fff}
+  .sync-pill.off{background:rgba(0,0,0,.22)}
   .save-dot.show{opacity:.95}
 
   /* Dashboard */
@@ -181,6 +184,12 @@
     #report{display:block;padding:0 4px}
   }
 </style>
+
+<!-- Firebase: permite compartir hallazgos en tiempo real entre varios celulares.
+     Si FIREBASE_CONFIG (más abajo, en el script principal) queda vacío, la app
+     sigue funcionando 100% normal en modo individual, sin esto. -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 </head>
 <body>
 
@@ -195,6 +204,7 @@
     <button class="gear" id="metaBtn" aria-label="Datos de la visita">⚙</button>
   </div>
   <div class="save-dot" id="saveDot">Guardado ✓</div>
+  <div class="sync-pill" id="syncPill" style="display:none"></div>
 </header>
 
 <div class="dash" id="dash">
@@ -272,6 +282,7 @@
     <div class="sheet-head"><h2>Datos de la visita</h2><button class="x" data-close>✕</button></div>
     <label class="f">Código de informe</label>
     <input class="in" id="mCod" placeholder="INF-AUD-PUC-2026-001">
+    <div class="hint" id="codShareHint"></div>
     <label class="f">Planta</label>
     <select class="in" id="mPlanta">
       <option>Planta Pucusana</option>
@@ -325,6 +336,31 @@
 <script>
 (function(){
   "use strict";
+
+  // ============================================================
+  // Sincronización en equipo (Firebase). Deja esto vacío y la app
+  // sigue funcionando 100% individual, sin cambios. Al completarlo
+  // con los datos de un proyecto Firebase (gratis), cualquier celular
+  // que use el MISMO "Código de informe" ve y edita los mismos
+  // hallazgos en tiempo real.
+  // ============================================================
+  var FIREBASE_CONFIG = {
+    apiKey: "AIzaSyDaXzNS7jCBZBjKRe4U41pFFiqdhv3olhU",
+    authDomain: "visita-planta-acl.firebaseapp.com",
+    projectId: "visita-planta-acl",
+    storageBucket: "visita-planta-acl.firebasestorage.app",
+    messagingSenderId: "898083450280",
+    appId: "1:898083450280:web:cfdf60abe9a33e3810019d"
+  };
+  var CLOUD_CONFIGURED = !!(FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.projectId);
+  var fbApp=null, db=null, roomRef=null, unsubFindings=null, unsubMetaRemote=null;
+  var SYNC_MODE="off"; // "off" | "connecting" | "on"
+  var currentRoomSlug=null;
+
+  function slugRoom(s){
+    return (s||"").trim().toUpperCase().replace(/[^A-Z0-9]+/g,"-").replace(/^-+|-+$/g,"") || "SALA";
+  }
+
   var K_META="acl_audit_meta", K_INDEX="acl_audit_index", K_F="acl_audit_f_";
   var K_ARC_INDEX="acl_audit_archive_index", K_ARC="acl_audit_archive_";
   var mem={}; // last-resort fallback
@@ -449,17 +485,90 @@
       var raw=await store.get(K_F+idx[i]);
       if(raw){ try{findings.push(JSON.parse(raw));}catch(e){} }
     }
-    renderMetaInputs(); renderAll();
+    renderMetaInputs(); renderAll(); renderSyncPill();
+    syncRoomIfNeeded();
   }
-  async function saveMeta(){ await store.set(K_META, JSON.stringify(meta)); flashSaved(); }
+  async function saveMeta(){
+    await store.set(K_META, JSON.stringify(meta)); flashSaved();
+    await syncRoomIfNeeded();
+    if(SYNC_MODE==="on" && roomRef){
+      roomRef.collection("info").doc("meta").set(
+        {planta:meta.planta, zona:meta.zona, fecha:meta.fecha, auditores:meta.auditores}, {merge:true}
+      ).catch(function(e){ console.warn("meta sync", e); });
+    }
+  }
   async function saveIndex(){ await store.set(K_INDEX, JSON.stringify(findings.map(function(f){return f.id;}))); }
   async function saveFinding(f){
     try{ await store.set(K_F+f.id, JSON.stringify(f)); await saveIndex(); flashSaved(); }
     catch(e){ alert("El almacenamiento del navegador se llenó. Usa ⋯ → Descargar respaldo y reduce fotos por hallazgo."); throw e; }
+    if(SYNC_MODE==="on" && roomRef){
+      roomRef.collection("hallazgos").doc(f.id).set(f).catch(function(e){
+        alert("No se pudo sincronizar este hallazgo con el equipo (sin señal). Se guardó local y se reintentará."); 
+        console.warn("finding sync", e);
+      });
+    }
   }
   async function deleteFinding(id){
     findings=findings.filter(function(f){return f.id!==id;});
     await store.del(K_F+id); await saveIndex(); renderAll();
+    if(SYNC_MODE==="on" && roomRef){
+      roomRef.collection("hallazgos").doc(id).delete().catch(function(e){ console.warn("finding del sync", e); });
+    }
+  }
+
+  // ---------- sincronización en equipo (Firebase) ----------
+  function renderSyncPill(){
+    var el=$("syncPill"); if(!el) return;
+    if(!CLOUD_CONFIGURED){ el.style.display="none"; return; }
+    el.style.display="inline-block";
+    if(SYNC_MODE==="on"){
+      el.textContent = navigator.onLine ? "🟢 Compartido en vivo · "+(currentRoomSlug||"") : "🟡 Sin señal (se sincroniza al volver)";
+      el.className = navigator.onLine ? "sync-pill on" : "sync-pill off";
+    }else if(SYNC_MODE==="connecting"){
+      el.textContent="🟡 Conectando...";
+      el.className="sync-pill off";
+    }else{
+      el.textContent="⚪ Solo este celular (pon el mismo código en otro para compartir)";
+      el.className="sync-pill off";
+    }
+  }
+  async function syncRoomIfNeeded(){
+    if(!CLOUD_CONFIGURED){ return; }
+    var wanted = meta.cod ? slugRoom(meta.cod) : null;
+    if(wanted === currentRoomSlug && (SYNC_MODE==="on"||SYNC_MODE==="connecting")) return; // ya conectado a la sala correcta
+    disconnectSync();
+    if(!wanted) return;
+    SYNC_MODE="connecting"; renderSyncPill();
+    try{
+      if(!fbApp){ fbApp=firebase.initializeApp(FIREBASE_CONFIG); db=firebase.firestore(); try{ db.enablePersistence({synchronizeTabs:true}); }catch(e){} }
+      currentRoomSlug=wanted;
+      roomRef=db.collection("visitas").doc(wanted);
+      unsubMetaRemote = roomRef.collection("info").doc("meta").onSnapshot(function(doc){
+        if(doc.exists){
+          var d=doc.data();
+          ["planta","zona","fecha","auditores"].forEach(function(k){ if(d[k]!==undefined) meta[k]=d[k]; });
+          store.set(K_META, JSON.stringify(meta));
+          renderMetaInputs();
+        }
+      }, function(e){ console.warn("meta listener", e); });
+      unsubFindings = roomRef.collection("hallazgos").onSnapshot(function(snap){
+        var arr=[]; snap.forEach(function(doc){ arr.push(doc.data()); });
+        arr.sort(function(a,b){ return (a.ts||0)-(b.ts||0); });
+        findings=arr;
+        findings.forEach(function(f){ store.set(K_F+f.id, JSON.stringify(f)); });
+        saveIndex();
+        renderAll();
+        SYNC_MODE="on"; renderSyncPill();
+      }, function(e){ console.warn("findings listener", e); SYNC_MODE="off"; renderSyncPill(); });
+    }catch(e){
+      console.warn("No se pudo conectar la sala compartida:", e);
+      SYNC_MODE="off"; renderSyncPill();
+    }
+  }
+  function disconnectSync(){
+    if(unsubFindings){ unsubFindings(); unsubFindings=null; }
+    if(unsubMetaRemote){ unsubMetaRemote(); unsubMetaRemote=null; }
+    roomRef=null; currentRoomSlug=null; SYNC_MODE="off"; renderSyncPill();
   }
 
   async function nuevoInforme(){
@@ -565,6 +674,11 @@
     findings = snap.findings || [];
     for(var j=0;j<findings.length;j++){ await store.set(K_F+findings[j].id, JSON.stringify(findings[j])); }
     await saveIndex(); await saveMeta();
+    // Si este código ya tiene sala compartida activa, sube estos hallazgos
+    // (por si la sala estaba vacía / es la primera vez que se comparte este informe)
+    if(roomRef){
+      findings.forEach(function(f){ roomRef.collection("hallazgos").doc(f.id).set(f).catch(function(){}); });
+    }
     // Sacarlo del archivo (ahora vuelve a estar activo)
     var idx=await loadArchiveIndex();
     idx=idx.filter(function(x){return x!==id;});
@@ -591,12 +705,12 @@
       r.onload=function(e){
         var img=new Image();
         img.onload=function(){
-          var mx=1280,w=img.width,h=img.height;
+          var mx=(CLOUD_CONFIGURED?900:1280),w=img.width,h=img.height;
           if(w>h && w>mx){h=Math.round(h*mx/w);w=mx;}
           else if(h>mx){w=Math.round(w*mx/h);h=mx;}
           var c=document.createElement("canvas");c.width=w;c.height=h;
           c.getContext("2d").drawImage(img,0,0,w,h);
-          res(c.toDataURL("image/jpeg",0.6));
+          res(c.toDataURL("image/jpeg",CLOUD_CONFIGURED?0.5:0.6));
         };
         img.onerror=function(){res(null);};
         img.src=e.target.result;
@@ -609,6 +723,12 @@
   // ---------- rendering ----------
   function renderMetaInputs(){
     $("mCod").value=meta.cod; $("mPlanta").value=meta.planta; $("mFecha").value=meta.fecha;
+    var chEl=$("codShareHint");
+    if(chEl){
+      chEl.textContent = CLOUD_CONFIGURED
+        ? "Si otro celular usa este MISMO código, van a ver y llenar los mismos hallazgos en vivo."
+        : "";
+    }
     var zsel=$("mZona");
     if(zsel.options.length===0){
       var optBlank=document.createElement("option"); optBlank.value=""; optBlank.textContent="(sin definir)"; zsel.appendChild(optBlank);
@@ -972,6 +1092,8 @@
 
   // ---------- events ----------
   function bind(){
+    window.addEventListener("online", renderSyncPill);
+    window.addEventListener("offline", renderSyncPill);
     $("addBtn").onclick=function(){openFind(null);};
     $("metaBtn").onclick=function(){renderMetaInputs();openOv("ovMeta");};
     $("newReportBtn").onclick=nuevoInforme;
@@ -999,7 +1121,7 @@
     async function handlePhotos(input){
       var files=Array.prototype.slice.call(input.files);
       for(var i=0;i<files.length;i++){
-        if(curPhotos.length>=6){alert("Máximo 6 fotos por hallazgo.");break;}
+        if(curPhotos.length>=(CLOUD_CONFIGURED?4:6)){alert("Máximo "+(CLOUD_CONFIGURED?4:6)+" fotos por hallazgo.");break;}
         var d=await compress(files[i]); if(d) curPhotos.push(d);
       }
       input.value=""; renderPrev();

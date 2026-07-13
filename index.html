@@ -1059,9 +1059,23 @@
 })();
 
 // Registro del service worker (permite instalar como app y funcionar sin internet)
+// Además: cuando detecta una versión nueva, la activa y recarga solo, sin
+// depender de que el usuario limpie caché manualmente.
 if("serviceWorker" in navigator){
   window.addEventListener("load", function(){
-    navigator.serviceWorker.register("sw.js").catch(function(e){ console.warn("SW no registrado:", e); });
+    navigator.serviceWorker.register("sw.js").then(function(reg){
+      reg.addEventListener("updatefound", function(){
+        var nuevo = reg.installing;
+        if(!nuevo) return;
+        nuevo.addEventListener("statechange", function(){
+          if(nuevo.state === "activated"){
+            window.location.reload();
+          }
+        });
+      });
+      // Revisa si hay una versión nueva cada vez que se abre la app
+      reg.update().catch(function(){});
+    }).catch(function(e){ console.warn("SW no registrado:", e); });
   });
 }
 </script>

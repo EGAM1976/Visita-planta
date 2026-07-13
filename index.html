@@ -190,6 +190,7 @@
      sigue funcionando 100% normal en modo individual, sin esto. -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 </head>
 <body>
 
@@ -542,7 +543,16 @@
     if(!wanted) return;
     SYNC_MODE="connecting"; renderSyncPill();
     try{
-      if(!fbApp){ fbApp=firebase.initializeApp(FIREBASE_CONFIG); db=firebase.firestore(); try{ db.enablePersistence({synchronizeTabs:true}); }catch(e){} }
+      if(!fbApp){
+        fbApp=firebase.initializeApp(FIREBASE_CONFIG);
+        db=firebase.firestore();
+        try{ db.enablePersistence({synchronizeTabs:true}); }catch(e){}
+      }
+      // Inicia sesión anónima: bloquea el acceso directo de bots/scripts a la
+      // base de datos, sin pedirle nada al usuario (es automático e invisible).
+      if(!firebase.auth().currentUser){
+        await firebase.auth().signInAnonymously();
+      }
       currentRoomSlug=wanted;
       roomRef=db.collection("visitas").doc(wanted);
       unsubMetaRemote = roomRef.collection("info").doc("meta").onSnapshot(function(doc){

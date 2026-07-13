@@ -358,7 +358,9 @@
   var currentRoomSlug=null;
 
   function slugRoom(s){
-    return (s||"").trim().toUpperCase().replace(/[^A-Z0-9]+/g,"-").replace(/^-+|-+$/g,"") || "SALA";
+    // Quita TODO lo que no sea letra o número (espacios, guiones, puntos, etc.)
+    // así "Prueba 2", "Prueba-2" y "PRUEBA2" siempre apuntan a la misma sala.
+    return (s||"").trim().toUpperCase().replace(/[^A-Z0-9]/g,"") || "SALA";
   }
 
   var K_META="acl_audit_meta", K_INDEX="acl_audit_index", K_F="acl_audit_f_";

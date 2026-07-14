@@ -354,6 +354,16 @@
     appId: "1:898083450280:web:cfdf60abe9a33e3810019d"
   };
   var CLOUD_CONFIGURED = !!(FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.projectId);
+
+  // PIN de administrador: solo quien lo sepa puede ELIMINAR hallazgos.
+  // Cámbialo por el que quieras (pídele a Claude que lo actualice cuando gustes).
+  var ADMIN_PIN = "2026acl";
+  function checkAdminPin(mensaje){
+    var pin=prompt(mensaje||"Escribe el PIN de administrador:");
+    if(pin===null) return false; // canceló
+    if(pin.trim()!==ADMIN_PIN){ alert("PIN incorrecto."); return false; }
+    return true;
+  }
   var fbApp=null, db=null, roomRef=null, unsubFindings=null, unsubMetaRemote=null;
   var SYNC_MODE="off"; // "off" | "connecting" | "on"
   var currentRoomSlug=null;
@@ -674,7 +684,10 @@
       b.onclick=function(){ restoreArchive(b.getAttribute("data-arc-open")); };
     });
     box.querySelectorAll("[data-arc-del]").forEach(function(b){
-      b.onclick=function(){ deleteArchiveEntry(b.getAttribute("data-arc-del")); };
+      b.onclick=function(){
+        if(!checkAdminPin("PIN de administrador para eliminar este informe archivado:")) return;
+        deleteArchiveEntry(b.getAttribute("data-arc-del"));
+      };
     });
   }
 
@@ -823,7 +836,11 @@
       b.onclick=function(){openFind(b.getAttribute("data-edit"));};
     });
     list.querySelectorAll("[data-del]").forEach(function(b){
-      b.onclick=function(){ if(confirm("¿Eliminar este hallazgo?")) deleteFinding(b.getAttribute("data-del")); };
+      b.onclick=function(){
+        var id=b.getAttribute("data-del");
+        if(!checkAdminPin("PIN de administrador para eliminar este hallazgo:")) return;
+        if(confirm("¿Eliminar este hallazgo? Esta acción no se puede deshacer.")) deleteFinding(id);
+      };
     });
   }
 
@@ -1177,6 +1194,7 @@
     $("tImport").onclick=function(){$("importFile").click();};
     $("importFile").onchange=function(){ if(this.files[0]) importBackup(this.files[0]); this.value=""; };
     $("tClear").onclick=async function(){
+      if(!checkAdminPin("PIN de administrador para borrar TODOS los hallazgos:")) return;
       if(!confirm("¿Borrar TODOS los hallazgos? Esta acción no se puede deshacer."))return;
       for(var i=0;i<findings.length;i++){ await store.del(K_F+findings[i].id); }
       findings=[]; await saveIndex(); renderAll(); closeOv();

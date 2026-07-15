@@ -1,0 +1,1314 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Vista Explosionada · STP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0e151d; --panel:#151f2a; --panel-2:#1b2733; --line:#28353f;
+    --text:#e8eef4; --muted:#8aa0b3; --faint:#5f7386;
+    --accent:#ff9e2c; --accent-2:#3b82f6;
+    --sheet-1:#f2f4f7; --sheet-2:#d9dfe6;
+    --ok:#3ecf8e; --danger:#ff5d5d;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:var(--ink);color:var(--text);
+    font-family:"Inter",system-ui,Segoe UI,Roboto,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;overflow:hidden}
+  .mono{font-family:"JetBrains Mono",ui-monospace,monospace}
+  .disp{font-family:"Space Grotesk","Inter",sans-serif}
+
+  .app{display:flex;flex-direction:column;height:100dvh}
+  header{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:10px 14px;
+    background:linear-gradient(180deg,#18232f,#131c26);border-bottom:1px solid var(--line);z-index:20}
+  .brand{display:flex;align-items:center;gap:11px;margin-right:6px}
+  .logo{width:34px;height:34px;border-radius:9px;flex:none;position:relative;
+    background:radial-gradient(120% 120% at 30% 20%,#ffb455,#ff9e2c 45%,#c96f00);
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.25),0 4px 14px rgba(255,158,44,.35)}
+  .logo::before,.logo::after{content:"";position:absolute;background:#0e151d;border-radius:2px}
+  .logo::before{width:14px;height:2.5px;top:15px;left:6px;box-shadow:0 5px 0 #0e151d,0 -5px 0 #0e151d}
+  .logo::after{width:2.5px;height:14px;top:10px;left:23px}
+  .brand h1{font-size:15px;line-height:1.05;margin:0;font-weight:700;letter-spacing:.2px}
+  .brand span{display:block;font-size:10.5px;color:var(--faint);letter-spacing:1.5px;text-transform:uppercase;font-weight:600}
+
+  .mode{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:700;
+    letter-spacing:.6px;text-transform:uppercase;padding:4px 9px;border-radius:20px;border:1px solid}
+  .mode.edit{color:#ffce8a;border-color:#5a4413;background:#241a08}
+  .mode.ro{color:#8fd4ff;border-color:#274a63;background:#0f2532}
+  .mode i{width:6px;height:6px;border-radius:50%;background:currentColor}
+
+  .tools{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-left:auto}
+  .group{display:flex;align-items:center;gap:6px;background:var(--panel);border:1px solid var(--line);padding:5px 8px;border-radius:10px}
+  .group>label{font-size:11px;color:var(--muted);white-space:nowrap;font-weight:600}
+
+  button,.btn{font-family:inherit;font-size:12.5px;font-weight:600;color:var(--text);
+    background:var(--panel-2);border:1px solid var(--line);border-radius:9px;padding:8px 12px;cursor:pointer;
+    display:inline-flex;align-items:center;gap:7px;transition:.15s;user-select:none}
+  button:hover,.btn:hover{border-color:#3a4a58;background:#22303d}
+  button:active,.btn:active{transform:translateY(1px)}
+  .btn.primary{background:linear-gradient(180deg,#ffab45,#ff9e2c);color:#241300;border-color:#e98a12;box-shadow:0 4px 14px rgba(255,158,44,.28)}
+  .btn.pubgh{background:linear-gradient(180deg,#49d38f,#2fb877);color:#052616;border-color:#1f9860;font-weight:700}
+  .btn.pubgh:hover{background:linear-gradient(180deg,#57dd99,#37c380)}
+  .btn.pubgh.off{background:var(--panel-2);color:var(--muted);border-color:var(--line);box-shadow:none}
+  .btn.primary:hover{background:linear-gradient(180deg,#ffb75c,#ffa634)}
+  .btn.pub{background:linear-gradient(180deg,#49d38f,#2fb877);color:#052616;border-color:#1f9860;box-shadow:0 4px 14px rgba(62,207,142,.25)}
+  .btn.pub:hover{background:linear-gradient(180deg,#57dd99,#37c380)}
+  .btn.ghost{background:transparent}
+  .seg{display:flex;background:var(--panel);border:1px solid var(--line);border-radius:9px;overflow:hidden}
+  .seg button{border:0;border-radius:0;background:transparent;padding:8px 11px;font-size:11.5px}
+  .seg button+button{border-left:1px solid var(--line)}
+  .seg button.on{background:var(--accent-2);color:#fff}
+
+  input[type=range]{-webkit-appearance:none;appearance:none;height:4px;border-radius:4px;
+    background:linear-gradient(90deg,var(--accent),var(--accent) var(--fill,0%),#33424f var(--fill,0%));width:120px;outline:none;cursor:pointer}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:#fff;border:3px solid var(--accent);cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.4)}
+  input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:#fff;border:3px solid var(--accent)}
+  .val{font-size:11.5px;color:var(--accent);min-width:34px;text-align:right}
+
+  main{flex:1;display:flex;min-height:0;position:relative}
+  #stage{position:relative;flex:1;min-width:0;background:radial-gradient(130% 120% at 50% 35%,var(--sheet-1),var(--sheet-2));overflow:hidden}
+  #cv{position:absolute;inset:0;display:block;touch-action:none}
+  #overlay{position:absolute;inset:0;pointer-events:none}
+  .badge{cursor:pointer;pointer-events:auto}
+  .sheetnote{position:absolute;left:14px;bottom:12px;color:#5c6b7a;font-size:11px;letter-spacing:.4px;font-family:"JetBrains Mono",monospace;pointer-events:none;user-select:none}
+  .corner{position:absolute;width:22px;height:22px;border:1px solid #b9c2cc;opacity:.7;pointer-events:none}
+  .corner.tl{top:12px;left:12px;border-right:0;border-bottom:0}
+  .corner.tr{top:12px;right:12px;border-left:0;border-bottom:0}
+  .corner.bl{bottom:12px;left:12px;border-right:0;border-top:0}
+  .corner.br{bottom:12px;right:12px;border-left:0;border-top:0}
+
+  /* ---- 2D (PDF) view ---- */
+  #view3d{position:absolute;inset:0}
+  #view2d{position:absolute;inset:0;overflow:hidden;touch-action:none;cursor:grab}
+  #view2d.grabbing{cursor:grabbing}
+  #pan2d{position:absolute;left:0;top:0;transform-origin:0 0;will-change:transform}
+  #pg2d{display:block;user-select:none;-webkit-user-drag:none;background:#fff;box-shadow:0 10px 50px rgba(0,0,0,.28)}
+  #ov2d{position:absolute;left:0;top:0;pointer-events:none}
+  #ov2d .balloon{pointer-events:auto;cursor:pointer}
+  .zoomgrp{display:none}
+  .zoomgrp .lab{font-size:11.5px;color:var(--muted);font-family:"JetBrains Mono";min-width:74px;text-align:center}
+  .zoomgrp .zbtn{padding:6px 11px;font-size:15px;line-height:1}
+
+  #empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:24px}
+  .drop{max-width:460px;text-align:center;background:rgba(255,255,255,.72);backdrop-filter:blur(4px);border:2px dashed #a9b4c0;border-radius:18px;padding:30px 26px;color:#33414f;transition:.15s}
+  .drop.hot{border-color:var(--accent);background:rgba(255,246,232,.9)}
+  .drop h2{font-family:"Space Grotesk";margin:2px 0 6px;font-size:19px;color:#1c2733}
+  .drop p{margin:0 0 16px;font-size:13px;color:#54626f;line-height:1.5}
+  .drop .row2{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+  .drop .mini{margin-top:14px;font-size:11.5px;color:#71808d}
+  .drop.err{border-color:var(--danger);background:rgba(255,238,238,.92)}
+
+  #busy{position:absolute;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;background:rgba(11,17,23,.55);backdrop-filter:blur(2px);color:#fff;z-index:5}
+  .spin{width:38px;height:38px;border-radius:50%;border:3px solid rgba(255,255,255,.25);border-top-color:var(--accent);animation:sp 1s linear infinite}
+  @keyframes sp{to{transform:rotate(360deg)}}
+
+  aside{width:400px;flex:none;background:var(--panel);border-left:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+  .bomhead{padding:13px 15px 10px;border-bottom:1px solid var(--line)}
+  .bomhead .row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .bomhead h3{font-family:"Space Grotesk";margin:0;font-size:14px;letter-spacing:.3px}
+  .count{font-size:11px;color:var(--faint);font-family:"JetBrains Mono"}
+  .filter{margin-top:10px;width:100%;background:var(--ink);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:8px 10px;font-size:12.5px;font-family:inherit}
+  .filter::placeholder{color:var(--faint)}
+
+  .list{flex:1;overflow:auto;padding:8px 8px 12px}
+  .item{display:flex;gap:9px;align-items:flex-start;padding:9px;border-radius:10px;border:1px solid transparent;transition:.12s}
+  .item+.item{margin-top:2px}
+  .item:hover{background:var(--panel-2)}
+  .item.sel{background:#20303e;border-color:#2f6fb0}
+  .sw{width:15px;height:15px;border-radius:4px;flex:none;margin-top:3px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.35)}
+  .item .id{font-family:"JetBrains Mono";font-weight:600;font-size:12px;color:var(--accent);background:#241a08;border:1px solid #4a370f;border-radius:6px;padding:2px 6px;margin-top:2px;flex:none;min-width:40px;text-align:center}
+  .item .fields{flex:1;min-width:0}
+  .item input.txt{width:100%;background:var(--ink);border:1px solid var(--line);color:var(--text);border-radius:7px;padding:7px 9px;font-size:12.5px;font-family:inherit}
+  .item input.txt:focus{outline:none;border-color:var(--accent)}
+  .item .txt.static{padding:6px 2px;font-size:13px;line-height:1.35;color:var(--text)}
+  .item .txt.static.empty{color:var(--faint);font-style:italic}
+  .item .meta{font-size:10.5px;color:var(--faint);margin-top:3px;font-family:"JetBrains Mono";white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+  .item .r2{display:flex;gap:6px;margin-top:6px}
+  .item .r2 .fld{flex:1;min-width:0}
+  .item .r2 label,.item .fld-lbl{display:block;font-size:9.5px;color:var(--faint);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;font-weight:600}
+  .item input.sm{width:100%;background:var(--ink);border:1px solid var(--line);color:var(--text);border-radius:6px;padding:6px 8px;font-size:12px;font-family:"JetBrains Mono"}
+  .item input.sm:focus{outline:none;border-color:var(--accent)}
+  .item input.sm.sap{color:#8fd4ff}
+  .item .desc{width:100%;background:var(--ink);border:1px solid var(--line);color:var(--text);border-radius:7px;padding:7px 9px;font-size:12.5px;font-family:inherit;margin-top:6px;resize:vertical;min-height:34px}
+  .item .desc:focus{outline:none;border-color:var(--accent)}
+  .item .rowtop{display:flex;align-items:center;justify-content:space-between;gap:6px}
+  .item .delx{flex:none;background:transparent;border:1px solid var(--line);color:var(--faint);border-radius:6px;padding:5px 8px;font-size:12px;cursor:pointer}
+  .item .delx:hover{color:#ff8080;border-color:#5a2a2a;background:#241414}
+  .item .stat-line{display:flex;gap:8px;font-size:11.5px;color:var(--text);margin-top:2px}
+  .item .stat-line .pn{font-family:"JetBrains Mono";color:var(--accent)}
+  .item .idedit{font-family:"JetBrains Mono";font-weight:600;font-size:12px;color:var(--accent);border-radius:6px;padding:2px 6px;border:1px solid #4a370f;width:52px;text-align:center}
+  .item .idedit:focus{outline:none;border-color:var(--accent)}
+
+  .bomfoot{padding:11px 14px;border-top:1px solid var(--line);display:flex;gap:8px;flex-wrap:wrap}
+  .bomfoot .btn{flex:1;justify-content:center;padding:9px 8px}
+
+  .sheetToggle{display:none}
+  @media (max-width:820px){
+    header{padding:9px 11px;gap:9px}
+    .brand h1{font-size:14px}
+    .tools{width:100%;order:3;margin-left:0;justify-content:flex-start}
+    main{flex-direction:column}
+    aside{width:100%;height:44dvh;border-left:0;border-top:1px solid var(--line)}
+    #stage{flex:1}
+    .sheetToggle{display:inline-flex;position:absolute;right:12px;bottom:12px;z-index:6;pointer-events:auto;box-shadow:0 6px 18px rgba(0,0,0,.35)}
+    aside.min{height:52px;overflow:hidden}
+    aside.min .list,aside.min .bomfoot,aside.min .filter{display:none}
+  }
+  .hidden{display:none!important}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand">
+      <div class="logo"></div>
+      <div><h1 class="disp">Vista Explosionada</h1><span>STP / STEP · Marcado de piezas</span></div>
+    </div>
+    <button class="btn ghost hidden" id="btnCat" title="Volver al catálogo">‹ Catálogo</button>
+    <span class="mode edit" id="modeBadge"><i></i><span id="modeTxt">Editor</span></span>
+
+    <div class="tools">
+      <button class="btn primary editor-only" id="btnOpen">＋ Cargar 3D (STP/STL)</button>
+      <button class="btn primary editor-only" id="btnOpenPDF" title="Cargar un PDF y marcar globos sobre el despiece 2D">＋ Cargar PDF</button>
+      <button class="btn ghost editor-only" id="btnOpenProj" title="Abrir un proyecto .json para seguir editándolo">Abrir proyecto</button>
+      <button class="btn pubgh editor-only" id="btnSaveGH" title="Subir este despiece a GitHub automáticamente">☁ Guardar en GitHub</button>
+      <button class="btn ghost editor-only" id="btnGHCfg" title="Conectar con GitHub">⚙</button>
+      <input type="file" id="file" accept=".stp,.step,.stl,.STP,.STEP,.STL" multiple class="hidden" />
+      <input type="file" id="filePdf" accept=".pdf,application/pdf" class="hidden" />
+      <input type="file" id="fileProj" accept=".json,.explo,application/json" class="hidden" />
+
+      <div class="group">
+        <label>Explosión</label>
+        <input type="range" id="explode" min="0" max="100" value="0" />
+        <span class="val" id="explodeVal">0%</span>
+      </div>
+
+      <div class="seg" id="views" title="Vista de cámara">
+        <button data-v="iso" class="on">Iso</button>
+        <button data-v="front">Frente</button>
+        <button data-v="top">Sup</button>
+        <button data-v="side">Lado</button>
+      </div>
+
+      <button class="btn ghost" id="btnTags" title="Mostrar/ocultar IDs">Ocultar IDs</button>
+      <button class="btn ghost" id="btnOutline" title="Contornos técnicos">Contornos ✓</button>
+
+      <div class="group zoomgrp" id="zoomgrp">
+        <button class="btn ghost zbtn editor-only" id="pgPrev" title="Página anterior">‹</button>
+        <span class="lab" id="pgLabel">Pág 1/1</span>
+        <button class="btn ghost zbtn editor-only" id="pgNext" title="Página siguiente">›</button>
+        <span style="width:1px;height:18px;background:var(--line)"></span>
+        <button class="btn ghost zbtn" id="zoomOut" title="Alejar">−</button>
+        <button class="btn ghost zbtn" id="zoomIn" title="Acercar">+</button>
+        <button class="btn ghost editor-only" id="btnDetect" title="Detectar automáticamente las fotos de repuestos">↻ Detectar piezas</button>
+        <button class="btn ghost editor-only" id="btnAuto" title="Rellenar N° de parte y descripción desde la tabla del PDF">Auto-leyenda</button>
+      </div>
+
+      <button class="btn ghost" id="btnFit" title="Encuadrar">Encuadrar</button>
+      <button class="btn pub editor-only" id="btnPublish" title="Genera el archivo del proyecto para compartir">⇧ Publicar proyecto</button>
+    </div>
+  </header>
+
+  <main>
+    <section id="stage">
+      <div id="view3d">
+        <canvas id="cv"></canvas>
+        <svg id="overlay" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arw" markerWidth="9" markerHeight="9" refX="7.5" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 L2.6,4.5 Z" fill="#ff9e2c"></path></marker>
+            <marker id="arwSel" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 L3,5 Z" fill="#2f6fb0"></path></marker>
+          </defs>
+          <g id="leaders"></g>
+        </svg>
+      </div>
+      <div id="view2d" class="hidden">
+        <div id="pan2d"><img id="pg2d" alt="" /><svg id="ov2d" xmlns="http://www.w3.org/2000/svg"></svg></div>
+      </div>
+      <div class="corner tl"></div><div class="corner tr"></div><div class="corner bl"></div><div class="corner br"></div>
+      <div class="sheetnote mono" id="sheetnote">— sin archivo —</div>
+      <button class="btn sheetToggle" id="sheetToggle">Lista ▾</button>
+
+      <div id="empty">
+        <div class="drop" id="drop">
+          <h2 class="disp" id="dropTitle">Suelta tus archivos STP/STL o un PDF aquí</h2>
+          <p id="dropText">Dos formas de despiezar: <b>STP/STL</b> (uno o varios a la vez) genera la vista 3D explosionada — cada archivo o cada sólido recibe su propio ID. Un <b>PDF</b> de catálogo se convierte en despiece 2D con globos detectados automáticamente. En ambos, cada pieza lleva su ID, N° de parte y código SAP en la leyenda. Al terminar, <b>Publicar proyecto</b> para compartir en solo lectura.</p>
+          <div class="row2" id="dropBtns">
+            <button class="btn primary" id="btnOpen2">Archivos .stp / .stl (3D)</button>
+            <button class="btn primary" id="btnOpenPDF2">Archivo .pdf (2D)</button>
+            <button class="btn ghost" id="btnOpenProj2">Abrir proyecto .json</button>
+          </div>
+          <div class="mini">¿Solo curioseando? <a href="#" id="demo" style="color:#b5651d;font-weight:600">Cargar ejemplo de demostración</a></div>
+        </div>
+      </div>
+
+      <div id="busy"><div class="spin"></div><div id="busyTxt" class="mono">Cargando…</div></div>
+    </section>
+
+    <aside id="bom">
+      <div class="bomhead">
+        <div class="row">
+          <h3 class="disp">Leyenda / BOM</h3>
+          <span class="count mono" id="count">0 piezas</span>
+        </div>
+        <input class="filter" id="filter" placeholder="Filtrar por ID o texto…" />
+      </div>
+      <div class="list" id="list"></div>
+      <div class="bomfoot">
+        <button class="btn" id="btnCsv">⬇ CSV</button>
+        <button class="btn" id="btnPng">⬇ Imagen</button>
+        <button class="btn ghost editor-only" id="btnClear" title="Vaciar descripciones">Limpiar textos</button>
+      </div>
+    </aside>
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+"use strict";
+(function(){
+  const OCCT_BASE="https://cdn.jsdelivr.net/npm/occt-import-js@0.0.23/dist/";
+  const OCCT_SRC =OCCT_BASE+"occt-import-js.js";
+  const $=s=>document.querySelector(s);
+  const stage=$("#stage"),cv=$("#cv"),overlay=$("#overlay"),leaders=$("#leaders");
+  const listEl=$("#list"),countEl=$("#count"),filterEl=$("#filter");
+  const emptyEl=$("#empty"),busyEl=$("#busy"),busyTxt=$("#busyTxt"),sheetnote=$("#sheetnote");
+  const fileInput=$("#file"),fileProj=$("#fileProj"),filePdf=$("#filePdf"),explode=$("#explode"),explodeVal=$("#explodeVal");
+  const view3d=$("#view3d"),view2d=$("#view2d"),pan2d=$("#pan2d"),pg2d=$("#pg2d"),ov2d=$("#ov2d"),zoomgrp=$("#zoomgrp");
+
+  const PDFJS_SRC="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/legacy/build/pdf.min.js";
+  const PDFJS_WORKER="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/legacy/build/pdf.worker.min.js";
+
+  // ---------- mode ----------
+  const params=new URLSearchParams(location.search);
+  const projUrl=params.get("proyecto")||params.get("p")||params.get("proj");
+  let readOnly=!!projUrl || params.get("ro")==="1";
+  let appMode="3d";
+  // 2D state
+  let img2={w:0,h:0,src:""},markers=[],sel2=null,pdfDoc=null,pdfPage=1,pdfPages=1,pdfText=null;
+  let curPage=null,curViewport=null;
+  let zoom=1,panx=0,pany=0;
+
+  function setMode(m){
+    appMode=m;
+    view3d.classList.toggle("hidden",m!=="3d");
+    view2d.classList.toggle("hidden",m!=="2d");
+    const g3=$("#explode").closest(".group");
+    g3.style.display=(m==="3d")?"":"none";
+    $("#views").style.display=(m==="3d")?"":"none";
+    $("#btnTags").style.display=(m==="3d")?"":"none";
+    $("#btnOutline").style.display=(m==="3d")?"":"none";
+    zoomgrp.style.display=(m==="2d")?"flex":"none";
+  }
+
+  let renderer,scene,camera,controls,root;
+  let raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2();
+  let parts=[],assemblyCenter=new THREE.Vector3(),assemblyRadius=1;
+  let showTags=true,showOutline=true,selectedId=null,currentName="";
+
+  function initThree(){
+    renderer=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true,preserveDrawingBuffer:true});
+    renderer.setClearColor(0x000000,0);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+    scene=new THREE.Scene();
+    const asp=stage.clientWidth/Math.max(1,stage.clientHeight),d=10;
+    camera=new THREE.OrthographicCamera(-d*asp,d*asp,d,-d,-2000,4000);
+    camera.position.set(1,0.75,1);
+    controls=new THREE.OrbitControls(camera,renderer.domElement);
+    controls.enableDamping=true;controls.dampingFactor=0.12;controls.enablePan=true;controls.screenSpacePanning=true;
+    scene.add(new THREE.HemisphereLight(0xffffff,0xb7c2cc,0.95));
+    const key=new THREE.DirectionalLight(0xffffff,0.85);key.position.set(1.2,2,1.6);scene.add(key);
+    const fill=new THREE.DirectionalLight(0xffffff,0.4);fill.position.set(-1.5,-0.5,-1);scene.add(fill);
+    root=new THREE.Group();scene.add(root);
+    resize();window.addEventListener("resize",resize);
+    renderer.domElement.addEventListener("pointerdown",onPick);
+    animate();
+  }
+  function resize(){
+    const w=stage.clientWidth,h=stage.clientHeight;
+    renderer.setSize(w,h,false);
+    overlay.setAttribute("viewBox",`0 0 ${w} ${h}`);overlay.setAttribute("width",w);overlay.setAttribute("height",h);
+    const asp=w/Math.max(1,h),cur=camera.top;
+    camera.left=-cur*asp;camera.right=cur*asp;camera.updateProjectionMatrix();
+    if(appMode==="2d"&&img2.w)applyPan2D();
+  }
+  function animate(){requestAnimationFrame(animate);if(appMode==="3d"){controls.update();renderer.render(scene,camera);if(parts.length)updateOverlay();}}
+
+  // ---------- occt (lazy, editor only) ----------
+  let occtPromise=null,occtLoaded=null;
+  function loadOcctScript(){
+    if(occtLoaded)return occtLoaded;
+    occtLoaded=new Promise((res,rej)=>{
+      if(typeof occtimportjs==="function")return res();
+      const s=document.createElement("script");s.src=OCCT_SRC;
+      s.onload=()=>res();s.onerror=()=>rej(new Error("No se pudo cargar el motor STEP (conexión)."));
+      document.head.appendChild(s);
+    });
+    return occtLoaded;
+  }
+  async function getOcct(){
+    await loadOcctScript();
+    if(!occtPromise)occtPromise=occtimportjs({locateFile:p=>OCCT_BASE+p});
+    return occtPromise;
+  }
+  const STL_LOADER_SRC="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/STLLoader.js";
+  let stlLoaded=null;
+  function loadStlScript(){
+    if(stlLoaded)return stlLoaded;
+    stlLoaded=new Promise((res,rej)=>{
+      if(THREE.STLLoader)return res();
+      const s=document.createElement("script");s.src=STL_LOADER_SRC;
+      s.onload=()=>res();s.onerror=()=>rej(new Error("No se pudo cargar el lector STL (conexión)."));
+      document.head.appendChild(s);
+    });
+    return stlLoaded;
+  }
+  async function meshesFromStl(buffer,name){
+    await loadStlScript();
+    const geo=new THREE.STLLoader().parse(buffer);
+    geo.computeVertexNormals();
+    const pos=Array.from(geo.attributes.position.array);
+    const idx=geo.index?Array.from(geo.index.array):null;
+    return [{name:name.replace(/\.stl$/i,""),attributes:{position:{array:pos}},index:idx?{array:idx}:undefined}];
+  }
+  async function meshesFromStep(buffer){
+    const occt=await getOcct();
+    const res=occt.ReadStepFile(new Uint8Array(buffer),null);
+    if(!res||!res.success||!res.meshes||!res.meshes.length)throw new Error("El archivo no contiene geometría sólida legible.");
+    return res.meshes;
+  }
+  // Load one or several STP/STEP/STL files as a single assembly, appending parts with continuous IDs.
+  async function loadModelFiles(files,appendToExisting){
+    if(!files||!files.length)return;
+    busy(true,"Leyendo archivos 3D…");
+    try{
+      for(let i=0;i<files.length;i++){
+        const f=files[i];
+        busy(true,"Procesando "+f.name+" ("+(i+1)+"/"+files.length+")…");
+        const buffer=await f.arrayBuffer();
+        const isStl=/\.stl$/i.test(f.name);
+        const meshes=isStl?await meshesFromStl(buffer,f.name):await meshesFromStep(buffer);
+        const append=appendToExisting||i>0;
+        buildFromMeshes(meshes,f.name,append);
+      }
+    }catch(err){console.error(err);alert("No se pudo procesar el/los archivo(s).\n\n"+(err.message||err));}
+    finally{busy(false);}
+  }
+  async function loadStepBuffer(buffer,name){
+    busy(true,"Iniciando motor STEP…");
+    try{
+      const meshes=await meshesFromStep(buffer);
+      buildFromMeshes(meshes,name,false);
+    }catch(err){console.error(err);alert("No se pudo procesar el archivo.\n\n"+(err.message||err));}
+    finally{busy(false);}
+  }
+
+  // ---------- part construction ----------
+  function clearParts(){
+    parts.forEach(p=>{root.remove(p.mesh);if(p.edges)root.remove(p.edges);
+      p.mesh.geometry.dispose();p.mesh.material.dispose();
+      if(p.edges){p.edges.geometry.dispose();p.edges.material.dispose();}});
+    parts=[];selectedId=null;
+  }
+  function makePart(position,index,hex,id,name,text,parte,sap){
+    const g=new THREE.BufferGeometry();
+    g.setAttribute("position",new THREE.Float32BufferAttribute(position,3));
+    if(index&&index.length)g.setIndex(new THREE.Uint32BufferAttribute(index,1));
+    g.computeVertexNormals();
+    const col=new THREE.Color(hex);
+    const mat=new THREE.MeshStandardMaterial({color:col,metalness:0.12,roughness:0.62});
+    const mesh=new THREE.Mesh(g,mat);
+    let edges=null;
+    try{edges=new THREE.LineSegments(new THREE.EdgesGeometry(g,28),
+      new THREE.LineBasicMaterial({color:0x1a2732,transparent:true,opacity:0.55}));edges.visible=showOutline;}catch(e){}
+    g.computeBoundingBox();
+    const c=new THREE.Vector3();g.boundingBox.getCenter(c);
+    root.add(mesh);if(edges)root.add(edges);
+    return {id,mesh,edges,hex,color:col,baseCentroid:c.clone(),dir:new THREE.Vector3(),name:name||"",text:text||"",parte:parte||"",sap:sap||"",bbox:g.boundingBox.clone()};
+  }
+  function finalizeAssembly(explodePct,cam){
+    const box=new THREE.Box3();
+    parts.forEach(p=>{box.expandByPoint(p.bbox.min);box.expandByPoint(p.bbox.max);});
+    box.getCenter(assemblyCenter);
+    const sph=new THREE.Sphere();box.getBoundingSphere(sph);assemblyRadius=sph.radius||1;
+    parts.forEach((p,i)=>{
+      const d=p.baseCentroid.clone().sub(assemblyCenter);
+      if(d.length()<assemblyRadius*1e-3){const a=(i/Math.max(1,parts.length))*Math.PI*2;d.set(Math.cos(a),0.35,Math.sin(a));}
+      p.dir.copy(d.normalize());
+    });
+    const pct=explodePct||0;
+    explode.value=pct;explode.style.setProperty("--fill",pct+"%");explodeVal.textContent=pct+"%";
+    applyExplode(pct);
+    if(cam)applyCamera(cam);else fitCamera();
+    renderBOM();
+    emptyEl.classList.add("hidden");
+    countEl.textContent=parts.length+(parts.length===1?" pieza":" piezas");
+    sheetnote.textContent=currentName.toUpperCase()+"  ·  "+parts.length+" PZA"+(readOnly?"  ·  SOLO LECTURA":"");
+  }
+  function nextId3D(){
+    let max=0;parts.forEach(p=>{const m=/^P0*(\d+)$/.exec(p.id);if(m)max=Math.max(max,+m[1]);});
+    return "P"+String(max+1).padStart(2,"0");
+  }
+  function buildFromMeshes(meshes,name,append){
+    setMode("3d");
+    if(!append){clearParts();currentName=name||"modelo.stp";}
+    else if(name){currentName=currentName?(currentName.replace(/\.(stp|step|stl)$/i,"")+" + "+name):name;}
+    const saved=loadSaved(currentName)||{};
+    meshes.forEach((m)=>{
+      const i=parts.length,hue=(i*63)%360;
+      const hex="#"+new THREE.Color().setHSL(hue/360,0.62,0.56).getHexString();
+      const id=nextId3D();
+      const pos=m.attributes.position.array;
+      const idx=(m.index&&m.index.array)?m.index.array:null;
+      const sv0=saved[id]||{};const sv=(typeof sv0==="string")?{text:sv0}:sv0;
+      parts.push(makePart(pos,idx,hex,id,m.name||name||"",sv.text||"",sv.parte||"",sv.sap||""));
+    });
+    finalizeAssembly(parseInt(explode.value,10)||0,null);
+  }
+  function buildFromProject(prj){
+    if(prj&&prj.type==="2d"){build2DFromProject(prj);return;}
+    setMode("3d");
+    clearParts();currentName=prj.name||"proyecto.stp";
+    (prj.parts||[]).forEach((p,i)=>{
+      const id=p.id||("P"+String(i+1).padStart(2,"0"));
+      parts.push(makePart(p.pos||p.position,p.idx||p.index||null,p.hex||"#8aa0b3",id,p.name||"",p.text||p.descripcion||"",p.parte||"",p.sap||""));
+    });
+    finalizeAssembly(prj.explode||0,prj.camera||null);
+  }
+
+  // ---------- explosion / camera ----------
+  function applyExplode(pct){
+    const t=pct/100,K=assemblyRadius*1.6;
+    parts.forEach(p=>{const off=p.dir.clone().multiplyScalar(t*K);p.mesh.position.copy(off);if(p.edges)p.edges.position.copy(off);});
+  }
+  function fitCamera(){
+    const asp=stage.clientWidth/Math.max(1,stage.clientHeight),v=Math.max(assemblyRadius*2.4,1);
+    camera.top=v;camera.bottom=-v;camera.left=-v*asp;camera.right=v*asp;
+    camera.near=-assemblyRadius*8-10;camera.far=assemblyRadius*8+4000;camera.zoom=1;
+    controls.target.copy(assemblyCenter);
+    let dir=camera.position.clone().sub(controls.target).normalize();
+    if(dir.lengthSq()<1e-6)dir.set(1,0.75,1).normalize();
+    camera.position.copy(assemblyCenter).add(dir.multiplyScalar(assemblyRadius*4+10));
+    camera.up.set(0,1,0);camera.updateProjectionMatrix();controls.update();
+  }
+  function setView(v){
+    const r=assemblyRadius*4+10,c=assemblyCenter;let dir;
+    if(v==="front")dir=new THREE.Vector3(0,0,1);
+    else if(v==="top")dir=new THREE.Vector3(0,1,0.0001);
+    else if(v==="side")dir=new THREE.Vector3(1,0,0);
+    else dir=new THREE.Vector3(1,0.75,1).normalize();
+    controls.target.copy(c);camera.position.copy(c).add(dir.multiplyScalar(r));
+    camera.up.set(0,1,0);camera.updateProjectionMatrix();controls.update();
+  }
+  function captureCamera(){
+    return {pos:camera.position.toArray().map(r4),target:controls.target.toArray().map(r4),
+      zoom:r4(camera.zoom),top:r4(camera.top)};
+  }
+  function applyCamera(cam){
+    try{
+      const asp=stage.clientWidth/Math.max(1,stage.clientHeight);
+      camera.top=cam.top;camera.bottom=-cam.top;camera.left=-cam.top*asp;camera.right=cam.top*asp;
+      camera.near=-assemblyRadius*8-10;camera.far=assemblyRadius*8+4000;
+      camera.zoom=cam.zoom||1;
+      camera.position.fromArray(cam.pos);controls.target.fromArray(cam.target);
+      camera.up.set(0,1,0);camera.updateProjectionMatrix();controls.update();
+    }catch(e){fitCamera();}
+  }
+
+  // ---------- overlay ----------
+  const tmp=new THREE.Vector3();
+  function worldCentroid(p){return tmp.copy(p.baseCentroid).add(p.mesh.position);}
+  function updateOverlay(){
+    const w=stage.clientWidth,h=stage.clientHeight;
+    if(!showTags){if(leaders.childNodes.length)leaders.innerHTML="";return;}
+    const cx=w/2,cy=h/2,R=Math.max(46,Math.min(w,h)*0.11);
+    const proj=parts.map(p=>{const wc=worldCentroid(p).clone().project(camera);
+      return {p,sx:(wc.x*0.5+0.5)*w,sy:(-wc.y*0.5+0.5)*h,z:wc.z};}).sort((a,b)=>b.z-a.z);
+    let out="";
+    proj.forEach(o=>{
+      const {p,sx,sy}=o;let ang=Math.atan2(sy-cy,sx-cx);if(!isFinite(ang))ang=0;
+      let bx=sx+Math.cos(ang)*R,by=sy+Math.sin(ang)*R;
+      bx=Math.max(24,Math.min(w-24,bx));by=Math.max(16,Math.min(h-14,by));
+      const sel=(p.id===selectedId),stroke=sel?"#2f6fb0":"#ff9e2c",mk=sel?"url(#arwSel)":"url(#arw)";
+      const bw=Math.max(30,12+p.id.length*8);
+      out+=`<line x1="${bx.toFixed(1)}" y1="${by.toFixed(1)}" x2="${sx.toFixed(1)}" y2="${sy.toFixed(1)}" stroke="${stroke}" stroke-width="${sel?2.2:1.5}" marker-end="${mk}"/>`
+        +`<circle cx="${sx.toFixed(1)}" cy="${sy.toFixed(1)}" r="${sel?3.4:2.4}" fill="${stroke}"/>`
+        +`<g class="badge" data-id="${p.id}" transform="translate(${(bx-bw/2).toFixed(1)},${(by-11).toFixed(1)})">`
+        +`<rect width="${bw}" height="22" rx="6" fill="${sel?'#2f6fb0':'#241a08'}" stroke="${stroke}" stroke-width="1.4"/>`
+        +`<text x="${bw/2}" y="15" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="${sel?'#fff':'#ffd28a'}">${p.id}</text></g>`;
+    });
+    leaders.innerHTML=out;
+  }
+  overlay.addEventListener("click",e=>{const g=e.target.closest(".badge");if(g)select(g.getAttribute("data-id"),true);});
+
+  // ---------- pick ----------
+  let downXY=null;
+  function onPick(e){
+    downXY=[e.clientX,e.clientY];
+    const up=ev=>{
+      renderer.domElement.removeEventListener("pointerup",up);
+      if(Math.abs(ev.clientX-downXY[0])>4||Math.abs(ev.clientY-downXY[1])>4)return;
+      const r=cv.getBoundingClientRect();
+      pointer.x=((ev.clientX-r.left)/r.width)*2-1;pointer.y=-((ev.clientY-r.top)/r.height)*2+1;
+      raycaster.setFromCamera(pointer,camera);
+      const hits=raycaster.intersectObjects(parts.map(p=>p.mesh),false);
+      if(hits.length){const f=parts.find(p=>p.mesh===hits[0].object);if(f)select(f.id,true);}else select(null,false);
+    };
+    renderer.domElement.addEventListener("pointerup",up);
+  }
+  function select(id,scrollTo){
+    selectedId=id;
+    parts.forEach(p=>{const on=(p.id===id);p.mesh.material.emissive.setHex(on?0x264a7a:0x000000);p.mesh.material.emissiveIntensity=on?0.9:0;});
+    document.querySelectorAll(".item").forEach(el=>{const on=el.getAttribute("data-id")===id;el.classList.toggle("sel",on);if(on&&scrollTo)el.scrollIntoView({block:"nearest",behavior:"smooth"});});
+  }
+
+  // ---------- BOM ----------
+  function renderBOM(){
+    if(appMode==="2d"){render2DBOM();return;}
+    const q=(filterEl.value||"").toLowerCase().trim();listEl.innerHTML="";
+    parts.forEach(p=>{
+      if(q&&!(p.id.toLowerCase().includes(q)||(p.text||"").toLowerCase().includes(q)||(p.parte||"").toLowerCase().includes(q)||(p.sap||"").toLowerCase().includes(q)))return;
+      const row=document.createElement("div");row.className="item"+(p.id===selectedId?" sel":"");row.setAttribute("data-id",p.id);
+      const metaTxt=p.name?escapeHtml(p.name):"malla "+p.id;
+      if(readOnly){
+        const t=p.text?escapeHtml(p.text):"— sin descripción —";
+        const stat=(p.parte||p.sap)?`<div class="stat-line">${p.parte?`<span class="pn">${escapeHtml(p.parte)}</span>`:""}${p.sap?`<span class="sapv">SAP ${escapeHtml(p.sap)}</span>`:""}</div>`:"";
+        row.innerHTML=`<div class="sw" style="background:${p.hex}"></div><div class="id mono">${p.id}</div>
+          <div class="fields">${stat}<div class="txt static${p.text?"":" empty"}">${t}</div><div class="meta">${metaTxt}</div></div>`;
+        row.addEventListener("click",()=>select(p.id,false));
+      }else{
+        row.innerHTML=`<div class="sw" style="background:${p.hex}"></div>
+          <div class="fields">
+            <div class="rowtop"><div class="id mono">${p.id}</div><button class="delx" title="Eliminar pieza de la leyenda">✕</button></div>
+            <div class="r2">
+              <div class="fld"><span class="fld-lbl">N° de parte</span><input class="sm parte" type="text" placeholder="p.ej. 27591"/></div>
+              <div class="fld"><span class="fld-lbl">Código SAP</span><input class="sm sap" type="text" placeholder="p.ej. 100234567"/></div>
+            </div>
+            <textarea class="desc" rows="1" placeholder="Descripción de la pieza…"></textarea>
+            <div class="meta">${metaTxt}</div>
+          </div>`;
+        const iParte=row.querySelector("input.parte"),iSap=row.querySelector("input.sap"),iDesc=row.querySelector("textarea.desc"),delx=row.querySelector(".delx");
+        iParte.value=p.parte||"";iSap.value=p.sap||"";iDesc.value=p.text||"";
+        iParte.addEventListener("input",()=>{p.parte=iParte.value;saveNow();});
+        iSap.addEventListener("input",()=>{p.sap=iSap.value;saveNow();});
+        iDesc.addEventListener("input",()=>{p.text=iDesc.value;saveNow();});
+        [iParte,iSap,iDesc].forEach(el=>el.addEventListener("focus",()=>select(p.id,false)));
+        delx.addEventListener("click",ev=>{ev.stopPropagation();if(confirm("¿Quitar "+p.id+" de la leyenda? (la pieza sigue visible en 3D, solo se borra su ficha)")){p.text="";p.parte="";p.sap="";saveNow();renderBOM();}});
+        row.addEventListener("click",e=>{if(e.target.tagName!=="INPUT"&&e.target.tagName!=="TEXTAREA"&&e.target.tagName!=="BUTTON")select(p.id,false);});
+      }
+      listEl.appendChild(row);
+    });
+  }
+  filterEl.addEventListener("input",renderBOM);
+
+  // ---------- persistence (editor draft) ----------
+  const keyFor=n=>"explo:"+n;
+  function loadSaved(n){try{return JSON.parse(localStorage.getItem(keyFor(n))||"null");}catch(e){return null;}}
+  let saveT=null;
+  function saveNow(){
+    if(readOnly)return;
+    clearTimeout(saveT);saveT=setTimeout(()=>{
+      const map={};parts.forEach(p=>{if(p.text||p.parte||p.sap)map[p.id]={text:p.text,parte:p.parte,sap:p.sap};});
+      try{localStorage.setItem(keyFor(currentName),JSON.stringify(map));}catch(e){}
+    },250);
+  }
+
+  // ---------- publish / export project ----------
+  function r4(x){return Math.round(x*1e4)/1e4;}
+  // Builds the publishable payload for whichever mode is active. Returns null if nothing loaded.
+  function buildPayload(){
+    if(appMode==="2d"){
+      if(!img2.src)return null;
+      const prj={v:1,type:"2d",name:currentName,createdAt:new Date().toISOString().slice(0,10),
+        image:img2.src,imgW:img2.w,imgH:img2.h,
+        markers:markers.map(m=>({id:m.id,x:r4(m.x),y:r4(m.y),text:m.text,parte:m.parte,sap:m.sap}))};
+      return {json:JSON.stringify(prj),file:(currentName.replace(/\.(pdf|json)$/i,"")||"despiece")+"_2d.json"};
+    }
+    if(!parts.length)return null;
+    const prj={v:1,name:currentName,createdAt:new Date().toISOString().slice(0,10),
+      explode:parseInt(explode.value,10)||0,camera:captureCamera(),
+      parts:parts.map(p=>{
+        const pos=Array.from(p.mesh.geometry.attributes.position.array).map(r4);
+        const idxAttr=p.mesh.geometry.index;
+        const idx=idxAttr?Array.from(idxAttr.array):null;
+        return {id:p.id,hex:p.hex,name:p.name,text:p.text,parte:p.parte,sap:p.sap,pos,idx};
+      })};
+    return {json:JSON.stringify(prj),file:(currentName.replace(/\.(stp|step|stl|json)$/i,"")||"proyecto")+".json"};
+  }
+
+  function exportProject(){
+    if(appMode==="2d"){publish2D();return;}
+    if(!parts.length){alert("Primero carga un STP.");return;}
+    const pay=buildPayload();
+    const json=pay.json;
+    const base=pay.file.replace(/\.json$/i,"");
+    downloadBlob(new Blob([json],{type:"application/json"}),base+".json");
+    const mb=(json.length/1048576);
+    setTimeout(()=>alert(
+      "Proyecto publicado: "+base+".json  ("+mb.toFixed(mb<1?2:1)+" MB)\n\n"+
+      "Para compartirlo en solo lectura:\n"+
+      "1) Sube este .json a tu GitHub Pages (p.ej. carpeta /proyectos).\n"+
+      "2) Comparte el enlace:\n"+
+      "   …/index.html?proyecto=proyectos/"+base+".json\n\n"+
+      "Quien lo abra verá tu despiece y leyenda, sin poder editar."
+    ),200);
+  }
+
+  // ================= 2D (PDF) =================
+  let pdfjsLoaded=null;
+  function loadPdfJs(){
+    if(pdfjsLoaded)return pdfjsLoaded;
+    pdfjsLoaded=new Promise((res,rej)=>{
+      if(window.pdfjsLib){try{pdfjsLib.GlobalWorkerOptions.workerSrc=PDFJS_WORKER;}catch(e){}return res();}
+      const s=document.createElement("script");s.src=PDFJS_SRC;
+      s.onload=()=>{try{pdfjsLib.GlobalWorkerOptions.workerSrc=PDFJS_WORKER;}catch(e){}res();};
+      s.onerror=()=>rej(new Error("No se pudo cargar el lector de PDF (conexión)."));
+      document.head.appendChild(s);
+    });
+    return pdfjsLoaded;
+  }
+  async function loadPdfBuffer(buffer,name){
+    busy(true,"Abriendo PDF…");
+    try{
+      await loadPdfJs();
+      pdfDoc=await pdfjsLib.getDocument({data:new Uint8Array(buffer)}).promise;
+      pdfPages=pdfDoc.numPages;pdfPage=1;markers=[];sel2=null;
+      currentName=(name||"catalogo.pdf");
+      await renderPdfPage(1);
+      setMode("2d");emptyEl.classList.add("hidden");
+      updatePageUi();
+      if(!readOnly){busy(true,"Detectando piezas…");await autoDetectBalloons(true);}
+      else{render2DBOM();}
+      sheetnote.textContent=currentName.toUpperCase()+"  ·  PDF pág "+pdfPage;
+    }catch(err){console.error(err);alert("No se pudo abrir el PDF.\n\n"+(err.message||err));}
+    finally{busy(false);}
+  }
+  async function renderPdfPage(n){
+    const page=await pdfDoc.getPage(n);
+    const base=page.getViewport({scale:1});
+    const scale=Math.min(3,Math.max(1,1500/base.width));
+    const vp=page.getViewport({scale});
+    curPage=page;curViewport=vp;
+    const c=document.createElement("canvas");c.width=Math.round(vp.width);c.height=Math.round(vp.height);
+    await page.render({canvasContext:c.getContext("2d"),viewport:vp}).promise;
+    img2={w:c.width,h:c.height,src:c.toDataURL("image/jpeg",0.82)};
+    setImage2D();
+    try{pdfText=await page.getTextContent();}catch(e){pdfText=null;}
+  }
+  function setImage2D(){
+    pg2d.src=img2.src;
+    pan2d.style.width=img2.w+"px";pan2d.style.height=img2.h+"px";
+    ov2d.setAttribute("viewBox","0 0 "+img2.w+" "+img2.h);ov2d.setAttribute("width",img2.w);ov2d.setAttribute("height",img2.h);
+    fit2D();render2DOverlay();
+  }
+  function updatePageUi(){$("#pgLabel").textContent="Pág "+pdfPage+"/"+pdfPages;}
+  async function gotoPage(n){
+    if(n<1||n>pdfPages||!pdfDoc)return;
+    if(markers.length && !confirm("Cambiar de página descartará los globos de esta página. ¿Continuar?"))return;
+    markers=[];sel2=null;pdfPage=n;
+    busy(true,"Renderizando página…");
+    try{
+      await renderPdfPage(n);updatePageUi();
+      if(!readOnly){busy(true,"Detectando piezas…");await autoDetectBalloons(true);}
+      else{render2DBOM();}
+      sheetnote.textContent=currentName.toUpperCase()+"  ·  PDF pág "+pdfPage;
+    }finally{busy(false);}
+  }
+
+  function fit2D(){
+    const sw=stage.clientWidth,sh=stage.clientHeight;
+    if(!img2.w)return;
+    zoom=Math.min(sw/img2.w,sh/img2.h)*0.94;
+    panx=(sw-img2.w*zoom)/2;pany=(sh-img2.h*zoom)/2;applyPan2D();
+  }
+  function applyPan2D(){pan2d.style.transform="translate("+panx+"px,"+pany+"px) scale("+zoom+")";}
+  function zoomAt(f,cx,cy){
+    const nz=Math.min(8,Math.max(0.08,zoom*f));
+    panx=cx-(cx-panx)*(nz/zoom);pany=cy-(cy-pany)*(nz/zoom);zoom=nz;applyPan2D();
+  }
+  function screenToImg(cx,cy){const r=pan2d.getBoundingClientRect();return {x:(cx-r.left)/r.width,y:(cy-r.top)/r.height};}
+  const clamp01=v=>Math.max(0,Math.min(1,v));
+
+  function render2DOverlay(){
+    const w=img2.w,R=Math.max(13,w*0.016);let out="";
+    markers.forEach(m=>{
+      const cx=m.x*img2.w,cy=m.y*img2.h,sel=(m.id===sel2);
+      out+='<g class="balloon" data-id="'+m.id+'">'
+        +'<circle cx="'+cx.toFixed(1)+'" cy="'+cy.toFixed(1)+'" r="'+R.toFixed(1)+'" fill="'+(sel?'#2f6fb0':'#ff9e2c')+'" stroke="#17110a" stroke-width="'+(R*0.12).toFixed(1)+'"/>'
+        +'<text x="'+cx.toFixed(1)+'" y="'+(cy+R*0.34).toFixed(1)+'" text-anchor="middle" font-family="\'JetBrains Mono\',monospace" font-weight="700" font-size="'+(R*0.95).toFixed(1)+'" fill="'+(sel?'#fff':'#241300')+'">'+m.id+'</text></g>';
+    });
+    ov2d.innerHTML=out;
+  }
+
+  function nextMarkerId(){
+    const used=new Set(markers.map(m=>+m.id).filter(n=>!isNaN(n)));
+    let n=1;while(used.has(n))n++;return String(n);
+  }
+  function addMarker(x,y){
+    const nm={id:nextMarkerId(),x:clamp01(x),y:clamp01(y),text:"",parte:"",sap:""};
+    markers.push(nm);
+    markers.sort((a,b)=>(+a.id||0)-(+b.id||0));
+    render2DOverlay();render2DBOM();saveNow2();
+    select2(nm.id,true);
+  }
+  function deleteMarker(id){
+    markers=markers.filter(m=>m.id!==id);
+    if(sel2===id)sel2=null;
+    render2DOverlay();render2DBOM();saveNow2();
+  }
+  function select2(id,scroll){
+    sel2=id;render2DOverlay();
+    document.querySelectorAll(".item").forEach(el=>{const on=el.getAttribute("data-id")===id;el.classList.toggle("sel",on);if(on&&scroll)el.scrollIntoView({block:"nearest",behavior:"smooth"});});
+  }
+
+  function render2DBOM(){
+    const q=(filterEl.value||"").toLowerCase().trim();listEl.innerHTML="";
+    countEl.textContent=markers.length+(markers.length===1?" pieza":" piezas");
+    markers.forEach(m=>{
+      if(q&&!(m.id.toLowerCase().includes(q)||(m.text||"").toLowerCase().includes(q)||(m.parte||"").toLowerCase().includes(q)||(m.sap||"").toLowerCase().includes(q)))return;
+      const row=document.createElement("div");row.className="item"+(m.id===sel2?" sel":"");row.setAttribute("data-id",m.id);
+      if(readOnly){
+        const t=m.text?escapeHtml(m.text):"— sin descripción —";
+        const stat=(m.parte||m.sap)?'<div class="stat-line">'+(m.parte?'<span class="pn">'+escapeHtml(m.parte)+'</span>':"")+(m.sap?'<span class="sapv">SAP '+escapeHtml(m.sap)+'</span>':"")+'</div>':"";
+        row.innerHTML='<div class="id mono" style="background:#241a08;border-color:#4a370f">'+m.id+'</div>'
+          +'<div class="fields">'+stat+'<div class="txt static'+(m.text?"":" empty")+'">'+t+'</div></div>';
+        row.addEventListener("click",()=>select2(m.id,false));
+      }else{
+        row.innerHTML='<div class="fields">'
+          +'<div class="rowtop"><input class="id mono idedit" style="background:#241a08;border-color:#4a370f" value="'+escapeAttr(m.id)+'" /><button class="delx" title="Eliminar globo">✕</button></div>'
+          +'<div class="r2">'
+          +'<div class="fld"><span class="fld-lbl">N° de parte</span><input class="sm parte" type="text" placeholder="p.ej. 27591"/></div>'
+          +'<div class="fld"><span class="fld-lbl">Código SAP</span><input class="sm sap" type="text" placeholder="p.ej. 100234567"/></div>'
+          +'</div>'
+          +'<textarea class="desc" rows="1" placeholder="Descripción de la pieza…"></textarea>'
+          +'</div>';
+        const iId=row.querySelector("input.idedit");
+        const iParte=row.querySelector("input.parte"),iSap=row.querySelector("input.sap"),iDesc=row.querySelector("textarea.desc"),delx=row.querySelector(".delx");
+        iParte.value=m.parte||"";iSap.value=m.sap||"";iDesc.value=m.text||"";
+        iId.addEventListener("change",()=>{
+          const v=(iId.value||"").trim();if(!v){iId.value=m.id;return;}
+          if(v!==m.id&&markers.some(x=>x!==m&&x.id===v)&&!confirm("Ya existe el globo \""+v+"\". ¿Usar el mismo número igual?")){iId.value=m.id;return;}
+          m.id=v;render2DOverlay();saveNow2();
+        });
+        iId.addEventListener("focus",()=>select2(m.id,false));
+        iParte.addEventListener("input",()=>{m.parte=iParte.value;saveNow2();});
+        iSap.addEventListener("input",()=>{m.sap=iSap.value;saveNow2();});
+        iDesc.addEventListener("input",()=>{m.text=iDesc.value;saveNow2();});
+        [iParte,iSap,iDesc].forEach(el=>el.addEventListener("focus",()=>select2(m.id,false)));
+        delx.addEventListener("click",e=>{e.stopPropagation();deleteMarker(m.id);});
+        row.addEventListener("click",e=>{if(e.target.tagName!=="INPUT"&&e.target.tagName!=="TEXTAREA"&&e.target.tagName!=="BUTTON")select2(m.id,false);});
+      }
+      listEl.appendChild(row);
+    });
+  }
+
+  // pan / zoom / marker interaction
+  let ptrs=new Map(),dragM=null,panStart=null,pinch=null,downXY2=null,downBalloon=null;
+  const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+  view2d.addEventListener("pointerdown",e=>{
+    try{view2d.setPointerCapture(e.pointerId);}catch(_){}
+    ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});downXY2=[e.clientX,e.clientY];view2d.classList.add("grabbing");
+    if(ptrs.size===2){const v=[...ptrs.values()];pinch={d:dist(v[0],v[1]),zoom,panx,pany};dragM=null;panStart=null;downBalloon=null;return;}
+    const b=e.target.closest(".balloon");
+    downBalloon=b?b.getAttribute("data-id"):null;
+    if(b&&!readOnly){dragM=markers.find(m=>m.id===downBalloon);panStart=null;}
+    else{panStart={x:e.clientX,y:e.clientY,panx,pany};}
+  });
+  view2d.addEventListener("pointermove",e=>{
+    if(!ptrs.has(e.pointerId))return;
+    ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(pinch&&ptrs.size>=2){const v=[...ptrs.values()];const nd=dist(v[0],v[1]);const mx=(v[0].x+v[1].x)/2,my=(v[0].y+v[1].y)/2;
+      const r=stage.getBoundingClientRect();zoom=pinch.zoom;panx=pinch.panx;pany=pinch.pany;zoomAt(nd/pinch.d,mx-r.left,my-r.top);return;}
+    if(dragM){const p=screenToImg(e.clientX,e.clientY);dragM.x=clamp01(p.x);dragM.y=clamp01(p.y);render2DOverlay();return;}
+    if(panStart){panx=panStart.panx+(e.clientX-panStart.x);pany=panStart.pany+(e.clientY-panStart.y);applyPan2D();}
+  });
+  function endPtr2(e){
+    view2d.classList.remove("grabbing");
+    const moved=downXY2?Math.hypot(e.clientX-downXY2[0],e.clientY-downXY2[1]):0;
+    const wasDrag=dragM,wasBalloon=downBalloon,wasPan=panStart;
+    ptrs.delete(e.pointerId);if(ptrs.size<2)pinch=null;
+    dragM=null;panStart=null;downBalloon=null;
+    if(moved>6){if(wasDrag)saveNow2();return;}
+    if(wasBalloon){select2(wasBalloon,true);return;}
+    if(!readOnly&&appMode==="2d"&&!wasDrag){const p=screenToImg(e.clientX,e.clientY);if(p.x>=0&&p.x<=1&&p.y>=0&&p.y<=1)addMarker(p.x,p.y);return;}
+    select2(null,false);
+  }
+  view2d.addEventListener("pointerup",endPtr2);
+  view2d.addEventListener("pointercancel",e=>{ptrs.delete(e.pointerId);pinch=null;dragM=null;panStart=null;view2d.classList.remove("grabbing");});
+  view2d.addEventListener("wheel",e=>{e.preventDefault();const r=stage.getBoundingClientRect();zoomAt(e.deltaY<0?1.12:1/1.12,e.clientX-r.left,e.clientY-r.top);},{passive:false});
+
+  // ---------- auto-detección de imágenes de repuestos ----------
+  function composeCTM(o,n){
+    return [o[0]*n[0]+o[2]*n[1], o[1]*n[0]+o[3]*n[1], o[0]*n[2]+o[2]*n[3], o[1]*n[2]+o[3]*n[3],
+            o[0]*n[4]+o[2]*n[5]+o[4], o[1]*n[4]+o[3]*n[5]+o[5]];
+  }
+  function unitSquareToPixelBox(ctm,vp){
+    const pts=[[0,0],[1,0],[1,1],[0,1]].map(([x,y])=>{
+      const ux=ctm[0]*x+ctm[2]*y+ctm[4],uy=ctm[1]*x+ctm[3]*y+ctm[5];
+      return vp.convertToViewportPoint(ux,uy);
+    });
+    const xs=pts.map(p=>p[0]),ys=pts.map(p=>p[1]);
+    return {x0:Math.min(...xs),y0:Math.min(...ys),x1:Math.max(...xs),y1:Math.max(...ys)};
+  }
+  async function detectImageBoxes(page,vp){
+    const opList=await page.getOperatorList();
+    const OPS=pdfjsLib.OPS,fn=opList.fnArray,ar=opList.argsArray;
+    let ctm=[1,0,0,1,0,0];const stack=[];const boxes=[];
+    const paintOps=new Set([OPS.paintImageXObject,OPS.paintImageXObjectRepeat,OPS.paintJpegXObject,OPS.paintInlineImageXObject].filter(x=>x!==undefined));
+    for(let i=0;i<fn.length;i++){
+      const op=fn[i],args=ar[i];
+      if(op===OPS.save)stack.push(ctm.slice());
+      else if(op===OPS.restore)ctm=stack.pop()||ctm;
+      else if(op===OPS.transform)ctm=composeCTM(ctm,args);
+      else if(paintOps.has(op)){
+        const b=unitSquareToPixelBox(ctm,vp);
+        boxes.push({x0:b.x0,y0:b.y0,x1:b.x1,y1:b.y1,w:b.x1-b.x0,h:b.y1-b.y0});
+      }
+    }
+    return boxes;
+  }
+  function dedupeBoxes(boxes){
+    const out=[];
+    boxes.forEach(b=>{
+      const dup=out.find(o=>Math.abs(o.x0-b.x0)<6&&Math.abs(o.y0-b.y0)<6&&Math.abs(o.x1-b.x1)<6&&Math.abs(o.y1-b.y1)<6);
+      if(!dup)out.push(b);
+    });
+    return out;
+  }
+  function sortReadingOrder(boxes){
+    const arr=boxes.slice().sort((a,b)=>a.y0-b.y0);
+    const tol=(arr.reduce((s,b)=>s+b.h,0)/Math.max(1,arr.length))*0.6||20;
+    const rows=[];
+    arr.forEach(b=>{
+      let row=rows.find(r=>Math.abs(r.y-b.y0)<tol);
+      if(!row){row={y:b.y0,items:[]};rows.push(row);}
+      row.items.push(b);
+    });
+    rows.sort((a,b)=>a.y-b.y);
+    const out=[];rows.forEach(r=>{r.items.sort((a,b)=>a.x0-b.x0);out.push(...r.items);});
+    return out;
+  }
+  function extractCalloutLabels(textContent,vp){
+    const items=(textContent&&textContent.items)||[];
+    const heights=items.map(it=>it.height||Math.hypot(it.transform[2],it.transform[3])||0).filter(h=>h>0.5);
+    const sorted=heights.slice().sort((a,b)=>a-b);
+    const med=sorted.length?sorted[Math.floor(sorted.length/2)]:10;
+    const labels=[];
+    items.forEach(it=>{
+      const s=(it.str||"").trim();
+      if(!/^\d{1,2}$/.test(s))return;
+      const h=it.height||Math.hypot(it.transform[2],it.transform[3])||0;
+      if(h<med*1.1)return;
+      const [px,py]=vp.convertToViewportPoint(it.transform[4],it.transform[5]);
+      labels.push({num:s,x:px,y:py});
+    });
+    return labels;
+  }
+  function assignBalloonIds(boxes,labels){
+    const used=new Set();
+    const avgDim=(boxes.reduce((s,b)=>s+Math.max(b.w,b.h),0)/Math.max(1,boxes.length))||40;
+    const results=boxes.map(b=>({box:b,id:null}));
+    results.forEach(r=>{
+      const cx=(r.box.x0+r.box.x1)/2,cy=(r.box.y0+r.box.y1)/2;
+      let best=null,bestD=Infinity;
+      labels.forEach(l=>{if(used.has(l))return;const d=Math.hypot(l.x-cx,l.y-cy);if(d<bestD){bestD=d;best=l;}});
+      if(best&&bestD<avgDim*1.5){r.id=best.num;used.add(best);}
+    });
+    const usedNums=new Set(results.filter(r=>r.id).map(r=>+r.id));
+    let next=1;
+    results.forEach(r=>{if(!r.id){while(usedNums.has(next))next++;r.id=String(next);usedNums.add(next);next++;}});
+    return results;
+  }
+  async function autoDetectBalloons(silent){
+    if(!pdfDoc||!curPage||!curViewport)return;
+    try{
+      const raw=await detectImageBoxes(curPage,curViewport);
+      const pageArea=curViewport.width*curViewport.height,minDim=Math.min(curViewport.width,curViewport.height);
+      let boxes=dedupeBoxes(raw).filter(b=>b.w>minDim*0.035&&b.h>minDim*0.035&&(b.w*b.h)<pageArea*0.8);
+      boxes=sortReadingOrder(boxes);
+      if(!boxes.length){
+        markers=[];render2DOverlay();render2DBOM();
+        if(!silent)alert("No encontré fotos de repuestos claras en esta página. Toca sobre el dibujo para agregar globos a mano.");
+        return;
+      }
+      const labels=extractCalloutLabels(pdfText,curViewport);
+      const assigned=assignBalloonIds(boxes,labels);
+      markers=assigned.map(r=>({
+        id:r.id,
+        x:clamp01(((r.box.x0+r.box.x1)/2)/img2.w),
+        y:clamp01(((r.box.y0+r.box.y1)/2)/img2.h),
+        text:"",parte:"",sap:""
+      })).sort((a,b)=>(+a.id||0)-(+b.id||0));
+      render2DOverlay();render2DBOM();saveNow2();
+      if(!silent)alert("Detecté "+markers.length+" pieza(s). Verifica los números junto a cada foto y usa \"Auto-leyenda\" para traer la descripción de la tabla.");
+    }catch(err){console.error(err);if(!silent)alert("No pude detectar piezas automáticamente en esta página.\n"+(err.message||err));}
+  }
+  function reDetectBalloons(){
+    if(!pdfDoc)return;
+    if(markers.length&&!confirm("Esto reemplaza los globos actuales de esta página por una nueva detección automática. ¿Continuar?"))return;
+    busy(true,"Detectando piezas…");
+    autoDetectBalloons(false).finally(()=>busy(false));
+  }
+
+
+  function autoFill2D(){
+    if(!pdfText||!pdfText.items){alert("No hay texto extraíble en esta página.");return;}
+    const its=pdfText.items.filter(i=>i.str&&i.str.trim()).map(i=>({s:i.str,x:i.transform[4],y:Math.round(i.transform[5])}));
+    const lines={};its.forEach(i=>{(lines[i.y]=lines[i.y]||[]).push(i);});
+    const rows=Object.keys(lines).sort((a,b)=>b-a).map(k=>lines[k].sort((a,b)=>a.x-b.x).map(i=>i.s).join(" ").replace(/\s+/g," ").trim());
+    const map={};
+    rows.forEach(r=>{const m=r.match(/^(\d{1,2})\s+([A-Za-z0-9][A-Za-z0-9\-\/]*)\s+(.+)$/);if(m&&!map[m[1]])map[m[1]]={parte:m[2],text:m[3]};});
+    let n=0;markers.forEach(mk=>{if(map[mk.id]){if(!mk.parte)mk.parte=map[mk.id].parte;if(!mk.text)mk.text=map[mk.id].text;n++;}});
+    render2DBOM();saveNow2();
+    alert(n?("Rellené N° de parte y descripción de "+n+" pieza(s) desde la tabla del PDF. Revisa y agrega el código SAP."):"No pude emparejar filas de la tabla automáticamente en esta página.");
+  }
+
+  function build2DFromProject(prj){
+    setMode("2d");
+    currentName=prj.name||"despiece.pdf";
+    markers=(prj.markers||[]).map(m=>({id:String(m.id),x:+m.x,y:+m.y,text:m.text||"",parte:m.parte||"",sap:m.sap||""}));
+    img2={w:prj.imgW||1000,h:prj.imgH||1000,src:prj.image||""};
+    sel2=null;pdfDoc=null;
+    pg2d.onload=()=>{fit2D();render2DOverlay();};
+    setImage2D();
+    render2DBOM();
+    emptyEl.classList.add("hidden");
+    zoomgrp.style.display="flex";$("#pgPrev").style.display="none";$("#pgNext").style.display="none";$("#pgLabel").style.display="none";
+    countEl.textContent=markers.length+(markers.length===1?" pieza":" piezas");
+    sheetnote.textContent=currentName.toUpperCase()+"  ·  "+markers.length+" GLOBOS"+(readOnly?"  ·  SOLO LECTURA":"");
+  }
+  function publish2D(){
+    if(!img2.src){alert("Primero carga un PDF.");return;}
+    const pay=buildPayload();
+    const json=pay.json;
+    const base=pay.file.replace(/_2d\.json$/i,"");
+    downloadBlob(new Blob([json],{type:"application/json"}),base+"_2d.json");
+    const mb=(json.length/1048576);
+    setTimeout(()=>alert(
+      "Despiece 2D publicado: "+base+"_2d.json  ("+mb.toFixed(mb<1?2:1)+" MB)\n\n"+
+      "Súbelo a /proyectos y compártelo:\n   …/index.html?proyecto=proyectos/"+base+"_2d.json\n\n"+
+      "Se ve como solo lectura, con la imagen, los globos y la leyenda."
+    ),200);
+  }
+  function saveNow2(){
+    if(readOnly)return;
+    try{localStorage.setItem("explo2:"+currentName,JSON.stringify(markers.map(m=>({id:m.id,x:m.x,y:m.y,text:m.text,parte:m.parte,sap:m.sap}))));}catch(e){}
+  }
+  async function export2DPNG(){
+    try{
+      const c=document.createElement("canvas");c.width=img2.w;c.height=img2.h;const ctx=c.getContext("2d");
+      const im=new Image();await new Promise((res,rej)=>{im.onload=res;im.onerror=rej;im.src=img2.src;});
+      ctx.drawImage(im,0,0,img2.w,img2.h);
+      const svg='<svg xmlns="http://www.w3.org/2000/svg" width="'+img2.w+'" height="'+img2.h+'">'+ov2d.innerHTML+'</svg>';
+      const io=new Image();await new Promise((res,rej)=>{io.onload=res;io.onerror=rej;io.src="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(svg);});
+      ctx.drawImage(io,0,0,img2.w,img2.h);
+      c.toBlob(b=>downloadBlob(b,(currentName.replace(/\.(pdf|json)$/i,"")||"despiece")+"_2d.png"),"image/png");
+    }catch(e){alert("No se pudo exportar la imagen.");}
+  }
+
+  // ---------- CSV / PNG ----------
+  function csvCell(s){s=(s||"").replace(/"/g,'""');return /[",\n]/.test(s)?`"${s}"`:s;}
+  function exportCSV(){
+    let csv;
+    if(appMode==="2d"){
+      csv="ID,N_Parte,Codigo_SAP,Descripcion\n";
+      markers.forEach(m=>{csv+=[m.id,csvCell(m.parte),csvCell(m.sap),csvCell(m.text)].join(",")+"\n";});
+    }else{
+      csv="ID,N_Parte,Codigo_SAP,Descripcion,Color,Malla\n";
+      parts.forEach(p=>{csv+=[p.id,csvCell(p.parte),csvCell(p.sap),csvCell(p.text),p.hex,csvCell(p.name)].join(",")+"\n";});
+    }
+    downloadBlob(new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"}),(currentName.replace(/\.(stp|step|pdf|json)$/i,"")||"leyenda")+"_BOM.csv");
+  }
+  async function exportPNG(){
+    if(appMode==="2d"){export2DPNG();return;}
+    try{
+      const w=stage.clientWidth,h=stage.clientHeight,dpr=Math.min(window.devicePixelRatio||1,2);
+      const out=document.createElement("canvas");out.width=w*dpr;out.height=h*dpr;
+      const ctx=out.getContext("2d");
+      const g=ctx.createRadialGradient(out.width*0.5,out.height*0.35,10,out.width*0.5,out.height*0.35,out.width*0.9);
+      g.addColorStop(0,"#f2f4f7");g.addColorStop(1,"#d9dfe6");ctx.fillStyle=g;ctx.fillRect(0,0,out.width,out.height);
+      renderer.render(scene,camera);ctx.drawImage(renderer.domElement,0,0,out.width,out.height);
+      const svg=new XMLSerializer().serializeToString(overlay);const img=new Image();
+      await new Promise((res,rej)=>{img.onload=res;img.onerror=rej;img.src="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(svg);});
+      ctx.drawImage(img,0,0,out.width,out.height);
+      out.toBlob(b=>downloadBlob(b,(currentName.replace(/\.(stp|step|json)$/i,"")||"vista")+"_explosionado.png"),"image/png");
+    }catch(e){renderer.render(scene,camera);cv.toBlob(b=>downloadBlob(b,"vista_explosionado.png"),"image/png");}
+  }
+  const esc=(s)=>escapeHtml(s);
+  // ================= GitHub (guardado automático) =================
+  const GH=(function(){
+    const KEY="acl:gh:cfg";
+    function b64(str){
+      const bytes=new TextEncoder().encode(str);
+      let bin="";const CH=0x8000;
+      for(let i=0;i<bytes.length;i+=CH)bin+=String.fromCharCode.apply(null,bytes.subarray(i,i+CH));
+      return btoa(bin);
+    }
+    function guess(){
+      const m=/^([^.]+)\.github\.io$/i.exec(location.hostname||"");
+      const owner=m?m[1]:"";
+      const seg=(location.pathname||"").split("/").filter(Boolean);
+      const repo=(m&&seg.length)?seg[0]:"";
+      return {owner,repo,branch:"main",token:""};
+    }
+    const api={
+      get cfg(){try{return JSON.parse(localStorage.getItem(KEY))||null;}catch(e){return null;}},
+      set cfg(v){try{localStorage.setItem(KEY,JSON.stringify(v));}catch(e){}},
+      clear(){try{localStorage.removeItem(KEY);}catch(e){}},
+      ready(){const c=this.cfg;return !!(c&&c.owner&&c.repo&&c.token);},
+      guess,
+      async req(path,opts){
+        const c=this.cfg;if(!c)throw new Error("Sin configurar.");
+        const r=await fetch("https://api.github.com"+path,Object.assign({},opts,{headers:Object.assign({
+          "Authorization":"Bearer "+c.token,
+          "Accept":"application/vnd.github+json",
+          "X-GitHub-Api-Version":"2022-11-28"
+        },(opts&&opts.headers)||{})}));
+        if(r.status===204)return {};
+        let j=null;try{j=await r.json();}catch(e){}
+        if(!r.ok){
+          const msg=(j&&j.message)||("HTTP "+r.status);
+          const err=new Error(msg);err.status=r.status;throw err;
+        }
+        return j;
+      },
+      repoPath(p){return "/repos/"+this.cfg.owner+"/"+this.cfg.repo+"/contents/"+p.split("/").map(encodeURIComponent).join("/");},
+      async getSha(path){
+        try{
+          const j=await this.req(this.repoPath(path)+"?ref="+encodeURIComponent(this.cfg.branch));
+          return (j&&j.sha)||null;
+        }catch(e){ if(e.status===404)return null; throw e; }
+      },
+      async putFile(path,contentStr,message){
+        const sha=await this.getSha(path);
+        const body={message:message||("Actualizar "+path),content:b64(contentStr),branch:this.cfg.branch};
+        if(sha)body.sha=sha;
+        return this.req(this.repoPath(path),{method:"PUT",body:JSON.stringify(body)});
+      },
+      async getJson(path){
+        const j=await this.req(this.repoPath(path)+"?ref="+encodeURIComponent(this.cfg.branch));
+        const bin=atob((j.content||"").replace(/\n/g,""));
+        const bytes=new Uint8Array(bin.length);
+        for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
+        return {data:JSON.parse(new TextDecoder().decode(bytes)),sha:j.sha};
+      },
+      async test(){
+        const c=this.cfg;
+        const r=await this.req("/repos/"+c.owner+"/"+c.repo);
+        return r&&r.full_name;
+      }
+    };
+    return api;
+  })();
+
+  function ghModal(){
+    const cur=GH.cfg||GH.guess();
+    const back=document.createElement("div");
+    back.style.cssText="position:fixed;inset:0;background:rgba(4,8,12,.72);z-index:60;display:flex;align-items:center;justify-content:center;padding:18px";
+    back.innerHTML='<div style="background:#151f2a;border:1px solid #28353f;border-radius:16px;max-width:520px;width:100%;padding:22px;max-height:90vh;overflow:auto">'
+      +'<h3 style="font-family:\'Space Grotesk\',sans-serif;margin:0 0 6px;font-size:17px">Conectar con GitHub</h3>'
+      +'<p style="color:#8aa0b3;font-size:12.5px;line-height:1.6;margin:0 0 16px">Con esto, el botón <b style="color:#e8eef4">Guardar en GitHub</b> sube los archivos solo, sin descargar ni subir a mano.</p>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'
+      +'<div><label style="display:block;font-size:10px;color:#5f7386;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;font-weight:600">Usuario / organización</label><input id="ghOwner" style="width:100%;background:#0e151d;border:1px solid #28353f;color:#e8eef4;border-radius:8px;padding:9px;font-size:13px;font-family:\'JetBrains Mono\',monospace"/></div>'
+      +'<div><label style="display:block;font-size:10px;color:#5f7386;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;font-weight:600">Repositorio</label><input id="ghRepo" style="width:100%;background:#0e151d;border:1px solid #28353f;color:#e8eef4;border-radius:8px;padding:9px;font-size:13px;font-family:\'JetBrains Mono\',monospace"/></div>'
+      +'</div>'
+      +'<div style="margin-top:10px"><label style="display:block;font-size:10px;color:#5f7386;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;font-weight:600">Rama</label><input id="ghBranch" style="width:100%;background:#0e151d;border:1px solid #28353f;color:#e8eef4;border-radius:8px;padding:9px;font-size:13px;font-family:\'JetBrains Mono\',monospace"/></div>'
+      +'<div style="margin-top:10px"><label style="display:block;font-size:10px;color:#5f7386;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;font-weight:600">Token de acceso (fine-grained)</label><input id="ghToken" type="password" placeholder="github_pat_..." style="width:100%;background:#0e151d;border:1px solid #28353f;color:#e8eef4;border-radius:8px;padding:9px;font-size:13px;font-family:\'JetBrains Mono\',monospace"/></div>'
+      +'<div style="margin-top:12px;background:#20303e;border:1px solid #2f6fb0;border-radius:10px;padding:11px 13px;font-size:11.5px;color:#8aa0b3;line-height:1.6">'
+      +'<b style="color:#8fd4ff">Cómo sacar el token:</b> GitHub → foto de perfil → Settings → Developer settings → Personal access tokens → <b style="color:#e8eef4">Fine-grained tokens</b> → Generate new token. En <b style="color:#e8eef4">Repository access</b> elige solo este repositorio. En <b style="color:#e8eef4">Permissions → Repository permissions → Contents</b> ponlo en <b style="color:#e8eef4">Read and write</b>. Genera y copia el token aquí.'
+      +'<br><br><b style="color:#ffb0b0">Importante:</b> el token se guarda solo en este navegador, nunca dentro de los archivos del repositorio. No lo pegues en ningún archivo ni lo compartas. Si se filtra, revócalo desde la misma pantalla de GitHub.'
+      +'</div>'
+      +'<div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">'
+      +'<button id="ghSave" class="btn primary">Probar y guardar</button>'
+      +'<button id="ghCancel" class="btn ghost">Cancelar</button>'
+      +'<span style="flex:1"></span>'
+      +'<button id="ghForget" class="btn ghost" style="color:#ffb0b0;border-color:#5a2a2a">Olvidar token</button>'
+      +'</div>'
+      +'<div id="ghMsg" style="margin-top:12px;font-size:12px;color:#8aa0b3"></div>'
+      +'</div>';
+    document.body.appendChild(back);
+    const q=s=>back.querySelector(s);
+    q("#ghOwner").value=cur.owner||"";q("#ghRepo").value=cur.repo||"";
+    q("#ghBranch").value=cur.branch||"main";q("#ghToken").value=cur.token||"";
+    const close=()=>back.remove();
+    q("#ghCancel").onclick=close;
+    back.addEventListener("click",e=>{if(e.target===back)close();});
+    q("#ghForget").onclick=()=>{GH.clear();q("#ghToken").value="";q("#ghMsg").textContent="Token borrado de este navegador.";ghUpdateUi();};
+    q("#ghSave").onclick=async()=>{
+      const cfg={owner:q("#ghOwner").value.trim(),repo:q("#ghRepo").value.trim(),
+        branch:q("#ghBranch").value.trim()||"main",token:q("#ghToken").value.trim()};
+      if(!cfg.owner||!cfg.repo||!cfg.token){q("#ghMsg").innerHTML='<span style="color:#ffb0b0">Completa usuario, repositorio y token.</span>';return;}
+      GH.cfg=cfg;
+      q("#ghMsg").textContent="Probando conexión…";
+      try{
+        const name=await GH.test();
+        q("#ghMsg").innerHTML='<span style="color:#3ecf8e">Conectado a '+name+'. Ya puedes usar "Guardar en GitHub".</span>';
+        ghUpdateUi();
+        setTimeout(close,1200);
+      }catch(e){
+        let hint="";
+        if(e.status===401)hint=" — el token no es válido o expiró.";
+        else if(e.status===404)hint=" — revisa el usuario/repositorio, o que el token tenga acceso a ESE repositorio.";
+        q("#ghMsg").innerHTML='<span style="color:#ffb0b0">No se pudo conectar: '+esc(e.message)+hint+'</span>';
+      }
+    };
+  }
+
+  function downloadBlob(blob,fname){const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=fname;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},400);}
+
+  // ---------- helpers ----------
+  function escapeHtml(s){return (s||"").replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));}
+  function escapeAttr(s){return (s||"").replace(/"/g,"&quot;").replace(/</g,"&lt;");}
+  function busy(on,txt){busyEl.style.display=on?"flex":"none";if(txt)busyTxt.textContent=txt;}
+  function readFileText(f){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsText(f);});}
+
+  // ---------- demo ----------
+  function buildDemo(){
+    const meshes=[];
+    const push=(geo,ox,oy,oz,label)=>{geo.translate(ox,oy,oz);const pos=geo.attributes.position.array;const idx=geo.index?geo.index.array:null;
+      meshes.push({name:label,attributes:{position:{array:Array.from(pos)}},index:idx?{array:Array.from(idx)}:undefined});};
+    push(new THREE.CylinderGeometry(3,3,0.6,48).toNonIndexed(),0,0,0,"Brida inferior");
+    push(new THREE.CylinderGeometry(2.4,2.4,0.5,48).toNonIndexed(),0,1.4,0,"Brida superior");
+    push(new THREE.CylinderGeometry(0.6,0.6,3.2,32).toNonIndexed(),0,0.7,0,"Eje central");
+    push(new THREE.TorusGeometry(2.9,0.18,16,60).rotateX(Math.PI/2).toNonIndexed(),0,0.35,0,"Junta O-ring");
+    for(let k=0;k<4;k++){const a=k*Math.PI/2;push(new THREE.CylinderGeometry(0.22,0.22,2.2,16).toNonIndexed(),Math.cos(a)*2.5,0.7,Math.sin(a)*2.5,"Perno M8 #"+(k+1));}
+    buildFromMeshes(meshes,"ejemplo_demo.stp");
+  }
+
+  // ---------- read-only viewer loading ----------
+  async function loadProjectFromUrl(url){
+    applyReadOnlyUI();busy(true,"Cargando proyecto…");
+    try{
+      const r=await fetch(url,{cache:"no-cache"});
+      if(!r.ok)throw new Error("HTTP "+r.status);
+      const prj=await r.json();
+      buildFromProject(prj);
+    }catch(err){
+      console.error(err);
+      const drop=$("#drop");drop.classList.add("err");
+      $("#dropTitle").textContent="No se pudo abrir el proyecto";
+      $("#dropText").innerHTML="No se pudo cargar <code>"+escapeHtml(url)+"</code>.<br>Verifica que el archivo exista y esté publicado en el mismo sitio.";
+      $("#dropBtns").classList.add("hidden");$("#demo").parentElement.classList.add("hidden");
+      emptyEl.classList.remove("hidden");
+    }finally{busy(false);}
+  }
+
+  function applyReadOnlyUI(){
+    readOnly=true;
+    document.querySelectorAll(".editor-only").forEach(el=>el.classList.add("hidden"));
+    $("#btnCat").classList.remove("hidden");
+    const b=$("#modeBadge");b.className="mode ro";$("#modeTxt").textContent="Solo lectura";
+    $("#dropTitle").textContent="Cargando vista…";
+    $("#dropText").textContent="Estás viendo un despiece compartido en modo consulta.";
+    $("#dropBtns").classList.add("hidden");
+  }
+
+  // ---------- events ----------
+  $("#btnOpen").onclick=()=>fileInput.click();
+  $("#btnOpen2").onclick=()=>fileInput.click();
+  $("#btnOpenPDF").onclick=()=>filePdf.click();
+  $("#btnOpenPDF2").onclick=()=>filePdf.click();
+  $("#btnOpenProj").onclick=()=>fileProj.click();
+  $("#btnOpenProj2").onclick=()=>fileProj.click();
+
+  function ghUpdateUi(){
+    const b=$("#btnSaveGH");if(!b)return;
+    const ok=GH.ready();
+    b.classList.toggle("off",!ok);
+    b.title=ok?("Subir a GitHub ("+GH.cfg.owner+"/"+GH.cfg.repo+")"):"Conecta tu GitHub primero (botón ⚙)";
+  }
+  $("#btnGHCfg").onclick=ghModal;
+  $("#btnSaveGH").onclick=async()=>{
+    if(!GH.ready()){ghModal();return;}
+    const pay=buildPayload();
+    if(!pay){alert("Primero carga un STP/STL o un PDF.");return;}
+    let name=prompt("Nombre del archivo dentro de /proyectos:",pay.file);
+    if(name===null)return;
+    name=name.trim().replace(/[^A-Za-z0-9._-]/g,"_");
+    if(!name){alert("Nombre inválido.");return;}
+    if(!/\.json$/i.test(name))name+=".json";
+    const path="proyectos/"+name;
+    busy(true,"Subiendo a GitHub…");
+    try{
+      const existed=await GH.getSha(path);
+      if(existed && !confirm("Ya existe "+path+" en el repositorio.\n\n¿Reemplazarlo con esta versión?")){busy(false);return;}
+      await GH.putFile(path,pay.json,(existed?"Actualizar ":"Agregar ")+path+" (desde el editor de despieces)");
+      const kb=Math.round(pay.json.length/1024);
+      const url=location.origin+location.pathname.replace(/[^/]*$/,"")+"explosionado.html?proyecto="+encodeURIComponent(path);
+      busy(false);
+      alert("Listo — "+(existed?"actualizado":"subido")+" a GitHub ("+kb+" KB):\n"+path+"\n\n"+
+        "Enlace directo del despiece:\n"+url+"\n\n"+
+        "Falta el último paso: en el Editor de Catálogo, enlaza esta lámina a su máquina.\n"+
+        "(GitHub Pages tarda ~1 minuto en publicarlo.)");
+    }catch(e){
+      busy(false);
+      let hint="";
+      if(e.status===401)hint="\n\nEl token no es válido o expiró. Vuelve a conectarlo con el botón ⚙.";
+      else if(e.status===403)hint="\n\nEl token no tiene permiso de escritura (Contents: Read and write) sobre este repositorio.";
+      else if(e.status===404)hint="\n\nRevisa el usuario/repositorio configurado, o que el token tenga acceso a ese repositorio.";
+      alert("No se pudo subir a GitHub:\n"+e.message+hint);
+    }
+  };
+  ghUpdateUi();
+  fileInput.addEventListener("change",e=>{const fl=e.target.files;if(!fl||!fl.length)return;
+    let append=false;
+    if(appMode==="3d"&&parts.length){append=confirm("Ya tienes "+parts.length+" pieza(s) cargadas.\n\nAceptar = AGREGAR estas piezas al ensamble actual.\nCancelar = REEMPLAZAR por los archivos nuevos.");}
+    loadModelFiles(Array.from(fl),append);fileInput.value="";});
+  filePdf.addEventListener("change",e=>{const f=e.target.files&&e.target.files[0];if(!f)return;
+    const rd=new FileReader();rd.onload=()=>loadPdfBuffer(rd.result,f.name);rd.onerror=()=>alert("No se pudo leer el PDF.");rd.readAsArrayBuffer(f);filePdf.value="";});
+  $("#pgPrev").onclick=()=>gotoPage(pdfPage-1);
+  $("#pgNext").onclick=()=>gotoPage(pdfPage+1);
+  $("#zoomIn").onclick=()=>{const r=stage.getBoundingClientRect();zoomAt(1.2,r.width/2,r.height/2);};
+  $("#zoomOut").onclick=()=>{const r=stage.getBoundingClientRect();zoomAt(1/1.2,r.width/2,r.height/2);};
+  $("#btnAuto").onclick=autoFill2D;
+  $("#btnDetect").onclick=reDetectBalloons;
+  fileProj.addEventListener("change",async e=>{const f=e.target.files&&e.target.files[0];if(!f)return;
+    try{const prj=JSON.parse(await readFileText(f));buildFromProject(prj);}catch(err){alert("Proyecto inválido.\n"+(err.message||err));}fileProj.value="";});
+
+  explode.addEventListener("input",()=>{const v=parseInt(explode.value,10);explode.style.setProperty("--fill",v+"%");explodeVal.textContent=v+"%";if(parts.length)applyExplode(v);});
+  $("#views").addEventListener("click",e=>{const b=e.target.closest("button[data-v]");if(!b)return;$("#views").querySelectorAll("button").forEach(x=>x.classList.remove("on"));b.classList.add("on");setView(b.getAttribute("data-v"));});
+  $("#btnTags").onclick=e=>{showTags=!showTags;e.target.textContent=showTags?"Ocultar IDs":"Mostrar IDs";if(!showTags)leaders.innerHTML="";};
+  $("#btnOutline").onclick=e=>{showOutline=!showOutline;e.target.textContent="Contornos "+(showOutline?"✓":"✕");parts.forEach(p=>{if(p.edges)p.edges.visible=showOutline;});};
+  $("#btnFit").onclick=()=>{if(appMode==="2d"){fit2D();}else if(parts.length){fitCamera();}};
+  $("#btnCat").onclick=()=>{const b=params.get("cat")||"catalogo.html";if(history.length>1)history.back();else location.href=b;};
+  $("#btnPublish").onclick=exportProject;
+  $("#btnCsv").onclick=exportCSV;
+  $("#btnPng").onclick=exportPNG;
+  $("#btnClear").onclick=()=>{
+    if(appMode==="2d"){if(!markers.length)return;if(!confirm("¿Borrar todas las descripciones, N° de parte y SAP?"))return;markers.forEach(m=>{m.text="";m.parte="";m.sap="";});saveNow2();render2DBOM();return;}
+    if(!parts.length)return;if(!confirm("¿Borrar todas las descripciones, N° de parte y SAP?"))return;parts.forEach(p=>{p.text="";p.parte="";p.sap="";});saveNow();renderBOM();};
+  $("#demo").addEventListener("click",e=>{e.preventDefault();busy(true,"Generando ejemplo…");setTimeout(()=>{buildDemo();busy(false);},60);});
+
+  // drag & drop (editor: STP or .json ; viewer: .json only)
+  const drop=$("#drop");
+  ["dragenter","dragover"].forEach(ev=>stage.addEventListener(ev,e=>{e.preventDefault();if(!parts.length&&drop&&!readOnly)drop.classList.add("hot");}));
+  ["dragleave","drop"].forEach(ev=>stage.addEventListener(ev,e=>{e.preventDefault();if(drop)drop.classList.remove("hot");}));
+  stage.addEventListener("drop",async e=>{
+    const fl=e.dataTransfer&&e.dataTransfer.files;if(!fl||!fl.length)return;
+    if(fl.length===1&&/\.(json|explo)$/i.test(fl[0].name)){try{buildFromProject(JSON.parse(await readFileText(fl[0])));}catch(err){alert("Proyecto inválido.");}return;}
+    if(readOnly)return;
+    if(fl.length===1&&/\.pdf$/i.test(fl[0].name)){const rd=new FileReader();rd.onload=()=>loadPdfBuffer(rd.result,fl[0].name);rd.readAsArrayBuffer(fl[0]);return;}
+    const all3d=Array.from(fl).every(f=>/\.(stp|step|stl)$/i.test(f.name));
+    if(!all3d){alert("Sube uno o varios .stp/.stl, un .pdf, o un proyecto .json");return;}
+    let append=false;
+    if(appMode==="3d"&&parts.length){append=confirm("Ya tienes "+parts.length+" pieza(s) cargadas.\n\nAceptar = AGREGAR estas piezas al ensamble actual.\nCancelar = REEMPLAZAR por los archivos nuevos.");}
+    loadModelFiles(Array.from(fl),append);
+  });
+
+  const aside=$("#bom"),sheetToggle=$("#sheetToggle");
+  sheetToggle.onclick=()=>{aside.classList.toggle("min");sheetToggle.textContent=aside.classList.contains("min")?"Lista ▴":"Lista ▾";};
+
+  // ---------- boot ----------
+  initThree();
+  if(projUrl){loadProjectFromUrl(projUrl);}
+  else if(readOnly){applyReadOnlyUI();}
+})();
+</script>
+</body>
+</html>

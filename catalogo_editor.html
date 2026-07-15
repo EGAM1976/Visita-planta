@@ -45,6 +45,8 @@
   .btn.primary:hover{background:linear-gradient(180deg,#ffb75c,#ffa634)}
   .btn.pub{background:linear-gradient(180deg,#49d38f,#2fb877);color:#052616;border-color:#1f9860}
   .btn.pub.off{background:var(--panel-2);color:var(--muted);border-color:var(--line)}
+  @keyframes needsavePulse{0%,100%{box-shadow:0 0 0 0 rgba(255,158,44,.55)}50%{box-shadow:0 0 0 7px rgba(255,158,44,0)}}
+  .btn.needsave{animation:needsavePulse 1.6s ease-out infinite}
   .btn.pub:hover{background:linear-gradient(180deg,#57dd99,#37c380)}
   .btn.danger{color:#ffb0b0;border-color:#5a2a2a}
   .btn.danger:hover{background:#241414;border-color:#7a3535}
@@ -201,7 +203,7 @@
   };
   $("#btnReload").onclick=()=>{
     if(dirty&&!confirm("Tienes cambios sin descargar. ¿Recargar de todos modos y perderlos?"))return;
-    fetch(CAT_URL,{cache:"no-cache"}).then(r=>r.json()).then(d=>{DATA=d;PATH=[];dirty=false;boot();toast("Recargado desde el sitio.");})
+    fetch(CAT_URL,{cache:"no-cache"}).then(r=>r.json()).then(d=>{DATA=d;PATH=[];markClean();boot();toast("Recargado desde el sitio.");})
       .catch(()=>alert("No se pudo recargar catalogo.json del sitio."));
   };
   $("#btnExport").onclick=exportCatalog;
@@ -220,7 +222,7 @@
     btn.textContent="Guardando…";btn.disabled=true;
     try{
       await GH.putFile("catalogo.json",JSON.stringify(DATA,null,1),"Actualizar catalogo.json (desde el editor de catálogo)");
-      dirty=false;
+      markClean();
       $("#footInfo").textContent="Guardado en GitHub. Se publica en ~1 minuto.";
       $("#footInfo").style.color="var(--ok)";
       toast("catalogo.json guardado en GitHub.");
@@ -245,7 +247,21 @@
     render();
   }
 
-  function markDirty(){dirty=true;$("#footInfo").textContent="Cambios sin descargar — no olvides bajar el archivo actualizado.";$("#footInfo").style.color="var(--accent)";}
+  function markDirty(){
+    dirty=true;
+    $("#footInfo").textContent="Cambios SIN GUARDAR — pulsa \"☁ Guardar en GitHub\" antes de salir.";
+    $("#footInfo").style.color="var(--accent)";
+    const b=$("#btnSaveGH");if(b)b.classList.add("needsave");
+  }
+  function markClean(){
+    dirty=false;
+    const b=$("#btnSaveGH");if(b)b.classList.remove("needsave");
+  }
+
+  window.addEventListener("beforeunload",e=>{
+    if(!dirty)return;
+    e.preventDefault();e.returnValue="";return "";
+  });
   function toast(msg){const t=$("#toast");t.textContent=msg;t.classList.add("show");clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove("show"),2600);}
 
   // ---------- tree helpers ----------
@@ -533,7 +549,7 @@
     const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="catalogo.json";
     document.body.appendChild(a);a.click();
     setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},400);
-    dirty=false;$("#footInfo").textContent="Descargado. Súbelo a la raíz de tu repo (reemplaza catalogo.json).";$("#footInfo").style.color="var(--ok)";
+    markClean();$("#footInfo").textContent="Descargado. Súbelo a la raíz de tu repo (reemplaza catalogo.json).";$("#footInfo").style.color="var(--ok)";
     toast("catalogo.json descargado.");
   }
 
